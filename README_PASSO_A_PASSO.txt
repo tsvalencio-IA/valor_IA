@@ -1,65 +1,54 @@
-VALOR_IA — SISTEMA DE COTAÇÃO POR LINK — V6
+VALOR_IA COTAÇÃO V8 — SISTEMA PRONTO
 
-OBJETIVO
-O WhatsApp envia apenas um convite curto. O fornecedor abre um formulário, preenche marca, código da marca, descrição, preço e disponibilidade. O painel da oficina atualiza em tempo real.
+Esta versão já vem com o Firebase configurado em firebase-config.js.
+O index.html abre direto no sistema. Não existe mais tela para colar configuração.
 
-ARQUIVOS
-- index.html: painel do administrador/oficina
-- fornecedor.html: formulário público do fornecedor
-- firebase-config.js: configuração do Firebase
-- firebase-rtdb-rules.json: regras do Realtime Database
-
-PASSO 1 — FIREBASE
-1. Acesse console.firebase.google.com
-2. Crie um projeto.
-3. Crie um Web App no projeto.
-4. Copie a configuração firebaseConfig.
-5. Ative Authentication > Sign-in method > Email/Password.
-6. Crie um usuário admin com e-mail e senha.
-7. Ative Realtime Database.
-8. Em Rules/Regras, cole o conteúdo de firebase-rtdb-rules.json e publique.
-
-PASSO 2 — CONFIGURAÇÃO
-Opção mais simples:
-- Abra index.html no GitHub Pages.
-- Cole a configuração do Firebase na tela inicial do sistema.
-- O sistema vai salvar no seu navegador e gerar links de fornecedor com a configuração embutida.
-
-Opção mais limpa:
-- Abra firebase-config.js.
-- Substitua COLE_AQUI pela configuração real do Firebase.
-- Suba os arquivos para o GitHub Pages.
-
-PASSO 3 — GITHUB PAGES
-Suba estes arquivos no repositório:
+ARQUIVOS PARA SUBIR NO GITHUB PAGES
 - index.html
 - fornecedor.html
 - firebase-config.js
+- firebase-rtdb-rules.json
+- firebase-rtdb-rules-TESTE_FUNCIONA_AGORA.json
 
-Seu link ficará parecido com:
-https://tsvalencio-ia.github.io/valor_IA/
+COMO INSTALAR NO SEU REPOSITÓRIO valor_IA
+1. Extraia este ZIP.
+2. Copie os arquivos para a raiz do repositório valor_IA.
+3. Suba no GitHub.
+4. Abra:
+   https://tsvalencio-ia.github.io/valor_IA/index.html
 
-PASSO 4 — USO
-1. Abra o painel.
-2. Entre com o e-mail e senha do administrador criados no Firebase Auth.
-3. Cadastre fornecedor.
-4. Importe a planilha XLSX.
-5. O sistema importa SOMENTE linhas PEÇA / CÓD.
-6. Gere link para o fornecedor.
-7. Envie o convite pelo WhatsApp.
-8. O fornecedor responde pelo formulário.
-9. O painel mostra o melhor preço em tempo real.
+CONFIGURAÇÃO DO FIREBASE
+1. Firebase Console > Realtime Database.
+2. Rules.
+3. Para teste imediato, cole o conteúdo de:
+   firebase-rtdb-rules-TESTE_FUNCIONA_AGORA.json
+4. Publique.
 
-IMPORTAÇÃO
-Este importador foi feito para a planilha no formato:
-Coluna B: PEÇA / CÓD.
-Coluna D: DESCRIÇÃO
-Coluna E: QTD
-Coluna F: UNITÁRIO
-Coluna G: DESCONTO
-Coluna H: TOTAL
+ATENÇÃO SOBRE SEGURANÇA
+As regras de teste deixam leitura/escrita aberta para validar o sistema agora.
+Depois que o fluxo estiver aprovado, precisa fechar as regras com login/admin e token por fornecedor.
 
-Serviços são ignorados automaticamente.
+COMO USAR
+1. No painel, cadastre fornecedores.
+2. Para fornecedor que cota tudo, coloque tipos:
+   todas as peças
+3. Importe a planilha XLSX.
+4. O sistema importa somente linhas PEÇA / CÓD. e ignora SERVIÇO.
+5. Crie a cotação online.
+6. Clique em Gerar convite WhatsApp para o fornecedor.
+7. Envie a mensagem curta no WhatsApp.
+8. O fornecedor abre o formulário, responde e salva.
+9. O painel atualiza automaticamente em tempo real.
 
-IMPORTANTE
-A configuração Web do Firebase não é senha. A segurança depende das regras do Realtime Database e do Firebase Auth.
+CAMPOS DO FORNECEDOR
+- Tenho / Não tenho
+- Marca
+- Código da marca ou referência
+- Descrição do vendedor
+- Preço unitário
+- Disponibilidade / prazo
+- Observação
+
+IMPORTAÇÃO DA PLANILHA I52203
+A lógica correta espera importar 34 peças e ignorar serviços.
+Ela usa apenas linhas onde a coluna ITEM / CÓDIGO começa com PEÇA e contém CÓD.
