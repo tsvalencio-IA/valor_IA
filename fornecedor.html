@@ -1,35 +1,87 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Formulário de Cotação</title>
+<meta charset="utf-8">
+<title>Formulário de cotação — valor_IA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-<script src="./firebase-config.js"></script>
 <style>
-:root{--bg:#f4f7fb;--card:#fff;--text:#1e293b;--muted:#64748b;--line:#dbe4ef;--accent:#2563eb;--green:#16a34a;--red:#dc2626;--shadow:0 10px 24px rgba(15,23,42,.07)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}.wrap{max-width:980px;margin:auto;padding:16px}header{background:#fff;border-bottom:1px solid var(--line);padding:18px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:14px;margin:12px 0}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 8px}.muted{color:var(--muted)}label{display:block;font-size:13px;color:var(--muted);margin:7px 0 4px}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}textarea{min-height:70px}button{border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;padding:10px 13px;margin:6px 4px 0 0}.green{background:var(--green)}.red{background:var(--red)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;background:#f8fafc;padding:4px 8px;font-size:12px;margin:2px}.ok{color:var(--green);font-weight:800}.progress{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden}.bar{height:100%;background:#16a34a;width:0}.mini{font-size:12px;color:var(--muted)}
+:root{--bg:#f4f7fb;--panel:#fff;--text:#182235;--muted:#68758a;--line:#d9e2ef;--blue:#2563eb;--green:#16a34a;--red:#dc2626;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text)}main{max-width:920px;margin:auto;padding:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+h1{font-size:24px;margin:8px 0}h2{font-size:18px;margin:0 0 10px}.muted{color:var(--muted)}label{display:block;margin:8px 0 4px;font-weight:700;color:#46556b;font-size:13px}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:14px}textarea{min-height:60px}
+button{border:0;border-radius:12px;padding:11px 14px;background:var(--blue);color:white;font-weight:800;cursor:pointer}button.green{background:var(--green)}button.red{background:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.item{border:1px solid var(--line);border-radius:16px;padding:12px;margin:12px 0;background:#fff}
+.ok{color:var(--green);font-weight:800}.bad{color:var(--red);font-weight:800}.pill{display:inline-block;border:1px solid var(--line);background:#f8fafc;border-radius:999px;padding:5px 8px;margin:2px;font-size:12px}.footer{text-align:center;color:#64748b;padding:20px}
 </style>
 </head>
 <body>
-<header><h1>Formulário de Cotação</h1><div class="muted">Preencha preço, marca, código da marca, descrição e disponibilidade. Pode salvar parcial.</div></header>
-<div class="wrap"><div id="app">Carregando...</div></div>
+<main>
+  <h1>Formulário de cotação</h1>
+  <p class="muted">Preencha preço, marca, código da marca, descrição e disponibilidade. Pode salvar parcial.</p>
+  <div id="app">Carregando...</div>
+</main>
+<div class="footer">Powered by thIAguinho Soluções Digitais</div>
 <script>
-firebase.initializeApp(firebaseConfig); const db=firebase.database();
-const qs=new URLSearchParams(location.search), cotacaoId=qs.get('cotacao'), fornecedorId=qs.get('fornecedor');
-const num=v=>{let s=String(v||'').replace(/[^0-9,.-]/g,''); if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.'); else if(s.includes(','))s=s.replace(',','.'); const n=Number(s); return isFinite(n)?n:0};
-const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-let cotacao=null, fornecedor=null, respostas={};
-if(!cotacaoId||!fornecedorId) document.getElementById('app').innerHTML='<div class="card">Link inválido.</div>';
-else init();
-function init(){ db.ref('cotacoes/'+cotacaoId).on('value',s=>{cotacao=s.val(); render();}); db.ref('fornecedores/'+fornecedorId).on('value',s=>{fornecedor=s.val(); render();}); db.ref(`cotacoes/${cotacaoId}/respostas/${fornecedorId}`).on('value',s=>{respostas=s.val()||{}; render();}); }
-function esc(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-function getVal(itemId,field){return esc((respostas[itemId]||{})[field]||'')}
-function isTenho(itemId){return (respostas[itemId]||{}).tem !== false}
-function render(){ if(!cotacao||!fornecedor) return; const itens=Object.values(cotacao.itens||{}).sort((a,b)=>a.seq-b.seq); const done=itens.filter(i=>respostas[i.id] && (respostas[i.id].tem===false || num(respostas[i.id].precoUnitario)>0)).length; const pct=itens.length?Math.round(done*100/itens.length):0; document.getElementById('app').innerHTML=`<div class="card"><h2>${fornecedor.nome}</h2><div class="muted">Cotação #${cotacao.numero} — ${cotacao.meta?.modelo||''} ${cotacao.meta?.placa||''}</div><p><b>${done}/${itens.length}</b> itens respondidos</p><div class="progress"><div class="bar" style="width:${pct}%"></div></div><div class="grid"><div><label>Disponibilidade padrão para preencher</label><input id="dispPadrao" placeholder="Ex: pronta entrega, amanhã, 2 dias"></div><div><label>Observação padrão</label><input id="obsPadrao" placeholder="Ex: peça nova"></div></div><button class="green" onclick="salvarTudo()">Salvar tudo preenchido</button><button onclick="aplicarPadrao()">Aplicar disponibilidade nos vazios</button></div>${itens.map(i=>cardItem(i)).join('')}`; }
-function cardItem(i){ const r=respostas[i.id]||{}; return `<div class="card" id="card_${i.id}"><h2>${i.seq}. ${esc(i.descricaoOriginal)}</h2><div class="muted">Código original: <b>${esc(i.codigoOriginal)}</b> | Qtd: <b>${i.quantidade}</b></div><div class="grid"><div><label>Tem / consegue fornecer?</label><select id="tem_${i.id}"><option value="sim" ${isTenho(i.id)?'selected':''}>Tenho / consigo</option><option value="nao" ${r.tem===false?'selected':''}>Não tenho</option></select></div><div><label>Marca</label><input id="marca_${i.id}" value="${getVal(i.id,'marca')}" placeholder="Ex: COFAP"></div><div><label>Código da marca / fornecedor</label><input id="codmarca_${i.id}" value="${getVal(i.id,'codigoMarca')}" placeholder="Opcional"></div><div><label>Preço unitário</label><input id="preco_${i.id}" value="${getVal(i.id,'precoUnitario')}" placeholder="Ex: 100,00"></div><div><label>Disponibilidade / prazo</label><input id="disp_${i.id}" value="${getVal(i.id,'disponibilidade')}" placeholder="Ex: pronta entrega"></div></div><label>Descrição do vendedor</label><input id="desc_${i.id}" value="${getVal(i.id,'descricaoFornecedor')}" placeholder="Descrição comercial da peça"><label>Observação</label><textarea id="obs_${i.id}" placeholder="Observação opcional">${getVal(i.id,'observacao')}</textarea><button onclick="salvarItem('${i.id}')">Salvar este item</button>${r.salvoEm?`<span class="pill ok">salvo</span><span class="mini">${r.salvoEm}</span>`:''}</div>`; }
-function payload(id){ return {fornecedorId,fornecedorNome:fornecedor.nome,tem:document.getElementById('tem_'+id).value!=='nao',marca:document.getElementById('marca_'+id).value.trim(),codigoMarca:document.getElementById('codmarca_'+id).value.trim(),descricaoFornecedor:document.getElementById('desc_'+id).value.trim(),precoUnitario:num(document.getElementById('preco_'+id).value),disponibilidade:document.getElementById('disp_'+id).value.trim(),observacao:document.getElementById('obs_'+id).value.trim(),salvoEm:new Date().toLocaleString('pt-BR')}; }
-async function salvarItem(id){ await db.ref(`cotacoes/${cotacaoId}/respostas/${fornecedorId}/${id}`).set(payload(id)); alert('Item salvo.'); }
-async function salvarTudo(){ const itens=Object.values(cotacao.itens||{}); const updates={}; itens.forEach(i=>{ const p=payload(i.id); if(p.tem===false || p.precoUnitario>0 || p.marca || p.disponibilidade) updates[i.id]=p; }); await db.ref(`cotacoes/${cotacaoId}/respostas/${fornecedorId}`).update(updates); alert('Cotação salva. Você pode voltar depois pelo mesmo link.'); }
-function aplicarPadrao(){ const d=document.getElementById('dispPadrao').value, o=document.getElementById('obsPadrao').value; Object.keys(cotacao.itens||{}).forEach(id=>{ if(d && !document.getElementById('disp_'+id).value) document.getElementById('disp_'+id).value=d; if(o && !document.getElementById('obs_'+id).value) document.getElementById('obs_'+id).value=o; }); }
+const ASSINATURA="Powered by thIAguinho Soluções Digitais";
+let db,qid,sid,token,quote={},supplier={};
+function $(id){return document.getElementById(id)}
+function qs(k){return new URLSearchParams(location.search).get(k)||""}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function parseMoney(v){let s=String(v||"").replace(/[^\d,.-]/g,"").trim();if(!s)return 0;if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"").replace(",",".");else if(s.includes(","))s=s.replace(",",".");let n=Number(s);return Number.isFinite(n)?n:0}
+function init(){
+  firebase.initializeApp(window.firebaseConfig); db=firebase.database();
+  qid=qs("q"); sid=qs("s"); token=qs("t");
+  if(!qid||!sid)return $("app").innerHTML="<div class='card'><b>Link inválido.</b></div>";
+  db.ref("quotes/"+qid).on("value",snap=>{quote=snap.val()||{}; loadSupplier();});
+}
+function loadSupplier(){db.ref("suppliers/"+sid).once("value").then(s=>{supplier=s.val()||{}; render();});}
+function render(){
+  if(!quote.id)return $("app").innerHTML="<div class='card'>Cotação não encontrada.</div>";
+  const link=quote.links?.[sid];
+  if(link?.token && token && link.token!==token)return $("app").innerHTML="<div class='card'><b>Link não autorizado.</b></div>";
+  if(quote.status==="closed")return $("app").innerHTML=`<div class='card'><h2>Cotação encerrada</h2><p>Esta cotação não está mais disponível para resposta.</p><p class='muted'>${ASSINATURA}</p></div>`;
+  const items=(quote.items||[]).filter(i=>quote.kind==="priceCheck"?i.targetSupplierId===sid:true);
+  const resp=quote.responses?.[sid]||{};
+  $("app").innerHTML=`<div class='card'><h2>${esc(supplier.name||"Fornecedor")}</h2><p><b>Cotação:</b> ${esc(quote.number||qid)}<br><b>Itens:</b> ${items.length}</p></div>
+  ${items.map((it,idx)=>{const r=resp[it.id]||{};return `<div class='item'><h2>${idx+1}. ${esc(it.desc)}</h2><p><span class='pill'>OEM: ${esc(it.oem||"-")}</span><span class='pill'>Qtd: ${esc(it.qty||1)}</span>${it.lastKnownPrice?`<span class='pill'>Valor conhecido: ${money(it.lastKnownPrice)}</span>`:""}</p>
+    <div class='grid'>
+      <div><label>Tenho / consigo fornecer?</label><select id='av_${it.id}'><option value='true' ${(r.available!==false)?"selected":""}>Sim</option><option value='false' ${r.available===false?"selected":""}>Não</option></select></div>
+      <div><label>Marca</label><input id='brand_${it.id}' value='${esc(r.brand||it.brand||"")}'></div>
+      <div><label>Código da marca</label><input id='bc_${it.id}' value='${esc(r.brandCode||it.brandCode||"")}'></div>
+      <div><label>Preço unitário atual</label><input id='price_${it.id}' value='${esc(r.price||it.lastKnownPrice||"")}' placeholder='100,00'></div>
+      <div><label>Disponibilidade / prazo</label><input id='disp_${it.id}' value='${esc(r.availability||it.availability||"")}' placeholder='hoje / amanhã / 2 dias'></div>
+    </div>
+    <label>Descrição do vendedor</label><input id='desc_${it.id}' value='${esc(r.desc||it.desc||"")}'>
+    <label>Observação</label><textarea id='obs_${it.id}'>${esc(r.obs||"")}</textarea>
+    <button class='green' onclick="saveItem('${it.id}')">Salvar este item</button>
+    <span id='status_${it.id}' class='muted'></span>
+  </div>`}).join("")}
+  <div class='card'><button class='green' onclick='saveAll()'>Salvar tudo preenchido</button><p class='muted'>Você pode voltar depois pelo mesmo link enquanto a cotação estiver aberta.</p></div>`;
+}
+function payload(id){
+  return {available:$("av_"+id).value==="true",brand:$("brand_"+id).value.trim(),brandCode:$("bc_"+id).value.trim(),desc:$("desc_"+id).value.trim(),price:parseMoney($("price_"+id).value),availability:$("disp_"+id).value.trim(),obs:$("obs_"+id).value.trim(),updatedAt:Date.now(),signature:ASSINATURA};
+}
+function saveItem(id){
+  const p=payload(id);
+  db.ref(`quotes/${qid}/responses/${sid}/${id}`).set(p).then(()=>{
+    $("status_"+id).textContent=" salvo";
+    const item=(quote.items||[]).find(x=>x.id===id);
+    if(item && p.available && p.price>0){
+      const priceId=item.sourcePriceId || (`auto_${sid}_${(item.oem||id).replace(/[^a-z0-9]/gi,"_")}`);
+      db.ref("priceDb/"+priceId).update({supplierId:sid,oem:item.oem||"",desc:p.desc||item.desc,brand:p.brand,brandCode:p.brandCode,price:p.price,availability:p.availability,obs:p.obs,updatedAt:Date.now(),signature:ASSINATURA});
+    }
+  });
+}
+function saveAll(){
+  const items=(quote.items||[]).filter(i=>quote.kind==="priceCheck"?i.targetSupplierId===sid:true);
+  Promise.all(items.map(i=>saveItem(i.id))).then(()=>alert("Cotação salva. Obrigado!"));
+}
+window.addEventListener("load",init);
 </script>
 </body>
 </html>

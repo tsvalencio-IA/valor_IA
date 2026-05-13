@@ -1,163 +1,506 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>valor_IA — Sistema de Cotação</title>
+  <meta charset="utf-8">
+  <title>valor_IA — Cotação Inteligente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="firebase-config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="./firebase-config.js"></script>
   <style>
     :root{
-      --bg:#f4f7fb; --panel:#ffffff; --panel2:#f8fafc; --text:#1e293b; --muted:#64748b; --line:#dbe4ef;
-      --accent:#2563eb; --accent2:#0f766e; --green:#16a34a; --red:#dc2626; --orange:#d97706; --soft:#e8f0fe;
-      --shadow:0 10px 24px rgba(15,23,42,.07); --radius:18px;
+      --bg:#f4f7fb;--panel:#ffffff;--panel2:#f8fafc;--text:#182235;--muted:#68758a;
+      --line:#d9e2ef;--blue:#2563eb;--green:#16a34a;--red:#dc2626;--orange:#d97706;
+      --shadow:0 10px 30px rgba(15,23,42,.08);--radius:18px;
     }
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.35}
-    header{background:#fff;border-bottom:1px solid var(--line);padding:18px 22px;position:sticky;top:0;z-index:20;box-shadow:0 3px 18px rgba(15,23,42,.05)}
-    h1{font-size:23px;margin:0;font-weight:800;letter-spacing:-.3px}.sub{color:var(--muted);margin-top:4px}.wrap{max-width:1280px;margin:0 auto;padding:18px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(315px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
-    h2{font-size:18px;margin:0 0 12px} h3{font-size:16px;margin:0 0 8px} label{display:block;color:var(--muted);font-size:13px;margin:9px 0 5px}
-    input,select,textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 11px;color:var(--text);outline:none} textarea{min-height:92px} input:focus,textarea:focus,select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px #dbeafe}
-    button{border:0;border-radius:12px;padding:10px 13px;background:var(--accent);color:white;font-weight:700;cursor:pointer;margin:4px 4px 4px 0} button:hover{filter:brightness(.97)}
-    .b2{background:var(--accent2)}.green{background:var(--green)}.red{background:var(--red)}.gray{background:#64748b}.orange{background:var(--orange)}.light{background:var(--soft);color:#1e40af}
-    .muted{color:var(--muted)}.mini{font-size:12px;color:var(--muted)}.pill{display:inline-block;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:4px 8px;margin:2px;font-size:12px}.ok{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--orange)}
-    table{width:100%;border-collapse:collapse;margin-top:8px;background:white;border-radius:14px;overflow:hidden} th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px} th{background:#f1f5f9;color:#334155;font-weight:800}.scroll{overflow:auto;max-height:430px;border:1px solid var(--line);border-radius:14px}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}.kpi{background:linear-gradient(180deg,#fff,#f8fafc);border:1px solid var(--line);border-radius:16px;padding:12px}.kpi b{display:block;font-size:22px;margin-top:4px}.quote{border:1px solid var(--line);border-radius:18px;background:#fff;padding:14px;margin:14px 0}.hidden{display:none}.softbox{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:14px;padding:12px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab{background:#e2e8f0;color:#334155}.tab.active{background:#1e40af;color:#fff}.profitPos{color:#15803d;font-weight:800}.profitNeg{color:#b91c1c;font-weight:800}.right{text-align:right}.nowrap{white-space:nowrap} footer{text-align:center;color:#94a3b8;padding:28px}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    header{background:linear-gradient(90deg,#fff,#eef5ff);border-bottom:1px solid var(--line);padding:18px 22px}
+    header h1{margin:0;font-size:24px;letter-spacing:.2px}
+    header p{margin:6px 0 0;color:var(--muted)}
+    main{max-width:1220px;margin:auto;padding:18px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+    .tab{border:1px solid var(--line);background:#eaf0f8;border-radius:14px;padding:11px 14px;font-weight:700;cursor:pointer;color:#27354a}
+    .tab.active{background:var(--blue);color:white;border-color:var(--blue)}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:760px){.grid2{grid-template-columns:1fr} main{padding:10px} header{padding:14px} .tablewrap{overflow:auto}}
+    h2{margin:0 0 12px;font-size:20px} h3{margin:12px 0 8px}
+    label{display:block;color:#46556b;font-size:13px;font-weight:700;margin:10px 0 5px}
+    input,textarea,select{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px;font-size:14px;color:var(--text)}
+    textarea{min-height:92px;resize:vertical}
+    button{border:0;border-radius:12px;padding:10px 13px;font-weight:800;cursor:pointer;margin:3px;background:var(--blue);color:white}
+    button.green{background:var(--green)} button.red{background:var(--red)} button.gray{background:#64748b} button.orange{background:var(--orange)}
+    button.light{background:#eaf0f8;color:#243349;border:1px solid var(--line)}
+    .muted{color:var(--muted)} .small{font-size:12px}.ok{color:var(--green);font-weight:800}.bad{color:var(--red);font-weight:800}
+    .pill{display:inline-block;border:1px solid var(--line);background:#f1f5f9;border-radius:999px;padding:5px 8px;margin:2px;font-size:12px;color:#334155}
+    table{width:100%;border-collapse:collapse;background:#fff}
+    th,td{border-bottom:1px solid var(--line);padding:9px;text-align:left;vertical-align:top;font-size:13px}
+    th{background:#f8fafc;color:#334155}
+    .hidden{display:none!important}
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .quote{border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff;margin:12px 0}
+    .quote.closed{background:#f5f5f5;opacity:.78}
+    .bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:var(--green)}
+    .searchbox{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.searchbox>*{flex:1}
+    .footer{padding:28px;text-align:center;color:#64748b}
+    .signature{font-size:12px;color:#64748b;margin-top:10px}
+    .alert{padding:12px;border-radius:14px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+    .success{padding:12px;border-radius:14px;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534}
+    details summary{cursor:pointer;font-weight:800}
   </style>
 </head>
 <body>
 <header>
   <h1>valor_IA — Sistema de Cotação Inteligente</h1>
-  <div class="sub">GitHub Pages + Realtime Database + formulário do fornecedor + robô local opcional para envio automático no WhatsApp.</div>
+  <p>Banco de preços + cotação por link + robô WhatsApp local + ordem de compra.</p>
 </header>
-<div class="wrap">
+
+<main>
   <div class="tabs">
-    <button class="tab active" onclick="showTab('painel',this)">Painel</button>
-    <button class="tab" onclick="showTab('fornecedoresTab',this)">Fornecedores</button>
-    <button class="tab" onclick="showTab('importarTab',this)">Importar planilha</button>
-    <button class="tab" onclick="showTab('ordensTab',this)">Ordens de compra</button>
-    <button class="tab" onclick="showTab('roboTab',this)">Robô WhatsApp</button>
+    <button class="tab active" data-tab="painel">Painel</button>
+    <button class="tab" data-tab="estabelecimento">Estabelecimento</button>
+    <button class="tab" data-tab="fornecedores">Fornecedores</button>
+    <button class="tab" data-tab="precos">Banco de preços</button>
+    <button class="tab" data-tab="importar">Importar planilha</button>
+    <button class="tab" data-tab="cotacoes">Cotações</button>
+    <button class="tab" data-tab="oc">Ordens de compra</button>
+    <button class="tab" data-tab="robo">Robô WhatsApp</button>
   </div>
 
-  <section id="painel" class="tabPage">
-    <div class="kpis">
-      <div class="kpi"><span class="mini">Cotações online</span><b id="kCot">0</b></div>
-      <div class="kpi"><span class="mini">Fornecedores</span><b id="kForn">0</b></div>
-      <div class="kpi"><span class="mini">Ordens de compra</span><b id="kOC">0</b></div>
-      <div class="kpi"><span class="mini">Fila WhatsApp pendente</span><b id="kFila">0</b></div>
-    </div>
-    <div class="card">
-      <h2>Cotações em tempo real</h2>
-      <div id="cotacoesBox" class="muted">Carregando...</div>
-    </div>
-  </section>
-
-  <section id="fornecedoresTab" class="tabPage hidden">
+  <section id="painel" class="tabpage">
     <div class="grid">
-      <div class="card">
-        <h2>Cadastrar fornecedor</h2>
-        <label>Nome</label><input id="fornNome" placeholder="Ex: FURLAN AUTO PEÇAS">
-        <label>WhatsApp</label><input id="fornWhats" placeholder="Ex: 17997631210">
-        <label>Tipos que atende</label><input id="fornTipos" placeholder="todas as peças, motor, freio, lataria">
-        <button onclick="salvarFornecedor()">Salvar fornecedor</button>
-        <div class="mini">Use <b>todas as peças</b> quando quiser que ele receba a cotação completa.</div>
-      </div>
-      <div class="card"><h2>Lista de fornecedores</h2><div id="fornecedoresBox"></div></div>
+      <div class="card"><h2>Cotações abertas</h2><div id="statOpen" class="ok">0</div><p class="muted">Vendedores ainda conseguem responder.</p></div>
+      <div class="card"><h2>Banco de preços</h2><div id="statPrices" class="ok">0</div><p class="muted">Preços históricos pesquisáveis.</p></div>
+      <div class="card"><h2>Fila WhatsApp</h2><div id="statQueue" class="ok">0</div><p class="muted">Convites pendentes para o robô.</p></div>
     </div>
-  </section>
-
-  <section id="importarTab" class="tabPage hidden">
-    <div class="grid">
-      <div class="card">
-        <h2>Importar planilha de OS</h2>
-        <label>Número da cotação / OS</label><input id="numeroCotacao" placeholder="Ex: I52203">
-        <label>Planilha XLSX</label><input id="filePlanilha" type="file" accept=".xlsx,.xls,.csv">
-        <label>Preço de venda usado para lucro</label>
-        <select id="modoVenda">
-          <option value="liquido">Usar valor líquido da planilha como preço vendido</option>
-          <option value="bruto">Usar valor bruto unitário da planilha</option>
-        </select>
-        <button onclick="importarPlanilha()">Importar somente PEÇAS</button>
-        <button class="green" onclick="criarCotacaoOnline()">Criar cotação online</button>
-        <div class="mini">A importação aceita somente linhas que começam como <b>PEÇA / CÓD.</b> e ignora serviços.</div>
-      </div>
-      <div class="card">
-        <h2>Prévia da importação</h2>
-        <div id="previewInfo" class="muted">Nenhuma planilha importada nesta tela.</div>
-        <div id="previewTable" class="scroll hidden"></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="ordensTab" class="tabPage hidden">
     <div class="card">
-      <h2>Importar planilha de ordem/cotação gerada pelo sistema</h2>
-      <input type="file" id="fileImportOC" accept=".xlsx,.xls,.csv">
-      <button onclick="importarOrdemCompraPlanilha()">Importar ordem/planilha</button>
-      <div class="mini">Use para trazer de volta uma planilha exportada por este sistema.</div>
+      <h2>Últimas cotações</h2>
+      <div id="latestQuotes"></div>
     </div>
-    <div class="card"><h2>Ordens de compra</h2><div id="ocsBox" class="muted">Carregando...</div></div>
   </section>
 
-  <section id="roboTab" class="tabPage hidden">
+  <section id="estabelecimento" class="tabpage hidden">
     <div class="card">
-      <h2>Robô local de WhatsApp</h2>
-      <p>O robô é opcional e fica no computador. Ele não calcula cotação; ele só envia automaticamente os convites que você colocar na fila.</p>
-      <div class="softbox">
-        <b>Como usar:</b><br>
-        1. Abra a pasta <b>robo-whatsapp</b> do ZIP.<br>
-        2. Clique em <b>CLIQUE_AQUI_INSTALAR_E_ABRIR_ROBO.bat</b>.<br>
-        3. Escaneie o QR Code.<br>
-        4. Volte ao painel e clique em <b>Enviar convite com robô</b> na cotação.
+      <h2>Cadastro do estabelecimento</h2>
+      <div class="grid">
+        <div><label>Nome do estabelecimento</label><input id="set_name" placeholder="Ex: Auto Peças Modelo"></div>
+        <div><label>WhatsApp da loja</label><input id="set_phone" placeholder="5517999999999"></div>
+        <div><label>Cidade/UF</label><input id="set_city" placeholder="São José do Rio Preto/SP"></div>
+        <div><label>Responsável</label><input id="set_owner" placeholder="Nome do responsável"></div>
       </div>
-      <p class="mini">Use apenas com fornecedores cadastrados e baixo volume operacional. O robô possui limite local de 100 mensagens por dia.</p>
-      <div id="filaBox"></div>
+      <label>Mensagem padrão enviada ao fornecedor</label>
+      <textarea id="set_msg"></textarea>
+      <p class="muted small">Variáveis disponíveis: {fornecedor}, {estabelecimento}, {cotacao}, {veiculo}, {placa}, {qtd}, {link}, {assinatura}</p>
+      <button class="green" onclick="saveSettings()">Salvar estabelecimento</button>
     </div>
   </section>
-</div>
-<footer>Powered by thIAguinho Soluções Digitais</footer>
+
+  <section id="fornecedores" class="tabpage hidden">
+    <div class="card">
+      <h2>Fornecedores</h2>
+      <div class="grid">
+        <div><label>Nome</label><input id="sup_name" placeholder="FURLAN AUTO PEÇAS"></div>
+        <div><label>WhatsApp</label><input id="sup_phone" placeholder="17997631210 ou 5517997631210"></div>
+        <div><label>Tipos que atende</label><input id="sup_types" placeholder="todas as peças, freio, motor, elétrica"></div>
+      </div>
+      <label>Observação</label><input id="sup_note" placeholder="Ex: bom para originais Renault">
+      <button class="green" onclick="saveSupplier()">Salvar fornecedor</button>
+      <div class="tablewrap" id="suppliersList"></div>
+    </div>
+  </section>
+
+  <section id="precos" class="tabpage hidden">
+    <div class="card">
+      <h2>Banco de preços</h2>
+      <div class="alert">
+        Use este banco para consultar preços já vendidos/importados. Selecione itens e mande para o fornecedor confirmar se ainda tem e se o valor continua o mesmo.
+      </div>
+      <div class="grid">
+        <div><label>Fornecedor</label><select id="price_supplier"></select></div>
+        <div><label>Código original/OEM</label><input id="price_oem"></div>
+        <div><label>Descrição do produto</label><input id="price_desc"></div>
+        <div><label>Marca</label><input id="price_brand"></div>
+        <div><label>Código da marca</label><input id="price_brandCode"></div>
+        <div><label>Preço de compra/venda conhecido</label><input id="price_value" placeholder="100,00"></div>
+        <div><label>Disponibilidade conhecida</label><input id="price_avail" placeholder="pronta entrega / 2 dias"></div>
+      </div>
+      <label>Observação</label><input id="price_obs">
+      <button class="green" onclick="savePriceItem()">Salvar no banco de preços</button>
+      <hr>
+      <div class="searchbox">
+        <div><label>Pesquisar</label><input id="price_search" oninput="renderPriceDb()" placeholder="código, peça, marca, fornecedor"></div>
+        <div><label>Fornecedor</label><select id="price_filter_supplier" onchange="renderPriceDb()"></select></div>
+      </div>
+      <div class="row">
+        <button onclick="createPriceCheckQuote()">Criar cotação de conferência com selecionados</button>
+        <button class="light" onclick="clearPriceSelection()">Limpar seleção</button>
+      </div>
+      <div class="tablewrap" id="priceList"></div>
+    </div>
+  </section>
+
+  <section id="importar" class="tabpage hidden">
+    <div class="card">
+      <h2>Importar planilha de OS</h2>
+      <div class="grid">
+        <div><label>Número da cotação/OS</label><input id="imp_number" placeholder="Ex: I52203"></div>
+        <div><label>Planilha XLSX</label><input id="imp_file" type="file" accept=".xlsx,.xls,.csv"></div>
+        <div>
+          <label>Preço de venda usado para lucro</label>
+          <select id="imp_saleMode">
+            <option value="liquido">Usar valor líquido da planilha como preço vendido</option>
+            <option value="bruto">Usar valor unitário/bruto quando existir</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="previewImport()">Importar somente PEÇAS</button>
+      <button class="green" onclick="createQuoteFromImport()">Criar cotação online</button>
+      <p class="muted">A importação tenta aceitar apenas linhas que começam como PEÇA / CÓD. e ignora SERVIÇO.</p>
+      <div id="importPreview"></div>
+    </div>
+  </section>
+
+  <section id="cotacoes" class="tabpage hidden">
+    <div class="card">
+      <h2>Cotações</h2>
+      <div id="quotesList"></div>
+    </div>
+  </section>
+
+  <section id="oc" class="tabpage hidden">
+    <div class="card">
+      <h2>Ordens de compra</h2>
+      <div class="grid2">
+        <div>
+          <h3>Importar planilha gerada pelo sistema</h3>
+          <input id="oc_file" type="file" accept=".xlsx,.xls">
+          <button onclick="importOrderXlsx()">Importar ordem/planilha</button>
+          <p class="muted small">Aceita planilha exportada por este sistema com assinatura interna.</p>
+        </div>
+        <div>
+          <h3>Resumo</h3>
+          <p class="muted">Gere OC a partir dos vencedores das cotações.</p>
+        </div>
+      </div>
+      <div id="ordersList"></div>
+    </div>
+  </section>
+
+  <section id="robo" class="tabpage hidden">
+    <div class="card">
+      <h2>Robô WhatsApp</h2>
+      <p>O robô local fica no computador da loja e lê a fila do Firebase para enviar os convites automaticamente.</p>
+      <div id="robotStatus"></div>
+      <div id="queueList"></div>
+      <div class="alert">
+        A pasta <b>robo-whatsapp</b> fica no computador. Abra o arquivo <b>CLIQUE_AQUI_INSTALAR_E_ABRIR_ROBO.bat</b>.
+      </div>
+    </div>
+  </section>
+</main>
+<div class="footer">Powered by thIAguinho Soluções Digitais</div>
+
 <script>
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-let fornecedores={}, cotacoes={}, ordensCompra={}, fila={}, imported=null;
-const money = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const num = v => { if(v==null) return 0; let s=String(v).trim().replace(/[^0-9,.-]/g,''); if(s.includes(',')&&s.includes('.')) s=s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s=s.replace(',','.'); const n=Number(s); return isFinite(n)?n:0; };
-const norm = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
-const safeId = s => String(s||'id').replace(/[^a-zA-Z0-9_-]/g,'_');
-function showTab(id,btn){ document.querySelectorAll('.tabPage').forEach(x=>x.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); }
-function onlyDigits(v){return String(v||'').replace(/\D/g,'')}
-function normalizePhone(v){let d=onlyDigits(v); if((d.length===10||d.length===11)&&!d.startsWith('55')) d='55'+d; return d}
-function tipoPeca(desc){ const d=norm(desc); const rules=[['freio',['FREIO','PASTILHA','DISCO']],['lataria',['FAROL','LANTERNA','PARACHOQUE','PARA-CHOQUE','GRADE','CAPO','BANCO','ASSENTO','TAPETE']],['arrefecimento',['RADIADOR','ADITIVO','AGUA','BOMBA D','VENTOINHA']],['suspensao',['AMORTECEDOR','BARRA','BUCHA','TERMINAL','BRAÇO','BRACO','ROLAMENTO','SEMIEIXO']],['eletrica',['BATERIA','SENSOR','COMANDO','LIMPADOR','PALHETA']],['motor',['VELA','COXIM','CORREIA','COLETOR','ESCAPE','CAMBIO','RETENTOR']]]; for(const [t,ps] of rules){ if(ps.some(p=>d.includes(p))) return t;} return 'geral'; }
-function extractCode(cell){ const m=String(cell||'').match(/C[OÓ]D\.?\s*:\s*([^\n\r]+)/i); return m?m[1].trim():''; }
-function extractVehicle(rows){ const meta={marca:'',modelo:'',ano:'',placa:'',chassi:'',km:'',prefixo:''}; rows.forEach(r=>r.forEach(c=>{ const s=String(c||'').trim(); const pairs=[['marca','MARCA'],['modelo','MODELO'],['ano','ANO'],['placa','PLACA'],['chassi','CHASSIS'],['chassi','CHASSI'],['km','KM'],['prefixo','PREFIXO']]; pairs.forEach(([key,label])=>{ const re=new RegExp(label+'\\s*:\\s*(.+)$','i'); const m=s.match(re); if(m && !meta[key]) meta[key]=m[1].trim(); }); })); return meta; }
-function importarPlanilha(){ const file=document.getElementById('filePlanilha').files[0]; if(!file) return alert('Escolha a planilha.'); const reader=new FileReader(); reader.onload=e=>{ const wb=XLSX.read(e.target.result,{type:'array'}); let rows=[]; wb.SheetNames.forEach(sn=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''})); }); const meta=extractVehicle(rows); const modo=document.getElementById('modoVenda').value; let itens=[], serv=0; rows.forEach((r,idx)=>{ const first=String(r[0]||''); const f=norm(first); if(f.startsWith('SERVICO')) {serv++; return;} if(!(f.startsWith('PECA') && f.includes('COD'))) return; const codigo=extractCode(first); const descricao=String(r[2]||'').trim(); if(!descricao) return; const qtd=num(r[3])||1, unitBruto=num(r[4]), desconto=num(r[5]), totalLiquido=num(r[6]); const vendaUnit = modo==='bruto' ? unitBruto : (qtd? totalLiquido/qtd : totalLiquido); itens.push({ id:'i_'+String(itens.length+1).padStart(3,'0'), seq:itens.length+1, linhaPlanilha:idx+1, codigoOriginal:codigo, descricaoOriginal:descricao, quantidade:qtd, tipo:tipoPeca(descricao), valorBrutoUnitario:unitBruto, descontoPercentual:desconto, totalLiquidoPlanilha:totalLiquido, vendaUnitario:Number(vendaUnit||0), vendaTotal:Number((vendaUnit||0)*qtd), criadoEm:new Date().toISOString() }); }); imported={meta,itens,servicosIgnorados:serv,totalPecas:itens.length,valorLiquidoPecas:itens.reduce((s,i)=>s+(i.totalLiquidoPlanilha||0),0)}; renderPreview(); } ; reader.readAsArrayBuffer(file); }
-function renderPreview(){ if(!imported) return; document.getElementById('previewInfo').innerHTML=`<b>${imported.totalPecas}</b> peças importadas | <b>${imported.servicosIgnorados}</b> serviços ignorados | Valor líquido peças: <b>${money(imported.valorLiquidoPecas)}</b><br>${imported.meta.marca||''} ${imported.meta.modelo||''} ${imported.meta.placa||''}`; const box=document.getElementById('previewTable'); box.classList.remove('hidden'); box.innerHTML=`<table><thead><tr><th>#</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Venda unit.</th><th>Total venda</th><th>Tipo</th></tr></thead><tbody>${imported.itens.map(i=>`<tr><td>${i.seq}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}</td><td>${i.quantidade}</td><td>${money(i.vendaUnitario)}</td><td>${money(i.vendaTotal)}</td><td>${i.tipo}</td></tr>`).join('')}</tbody></table>`; }
-async function criarCotacaoOnline(){ if(!imported||!imported.itens.length) return alert('Importe uma planilha primeiro.'); const numero=document.getElementById('numeroCotacao').value.trim()||imported.meta.prefixo||('COT_'+Date.now()); const id='cot_'+safeId(numero)+'_'+Date.now(); const itensObj={}; imported.itens.forEach(i=>itensObj[i.id]=i); await db.ref('cotacoes/'+id).set({id,numero,status:'aberta',meta:imported.meta,itens:itensObj,criadaEm:new Date().toISOString(),valorLiquidoPecas:imported.valorLiquidoPecas}); alert('Cotação online criada.'); showTab('painel',document.querySelector('.tab')); }
-async function salvarFornecedor(){ const nome=document.getElementById('fornNome').value.trim(), whatsapp=normalizePhone(document.getElementById('fornWhats').value), tipos=document.getElementById('fornTipos').value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean); if(!nome||!whatsapp||!tipos.length) return alert('Preencha nome, WhatsApp e tipos.'); const id='forn_'+safeId(nome).toLowerCase()+'_'+Date.now(); await db.ref('fornecedores/'+id).set({id,nome,whatsapp,tipos,ativo:true,criadoEm:new Date().toISOString()}); document.getElementById('fornNome').value=''; document.getElementById('fornWhats').value=''; document.getElementById('fornTipos').value=''; }
-async function removerFornecedor(id){ if(confirm('Remover fornecedor?')) await db.ref('fornecedores/'+id).remove(); }
-function fornecedorAtende(f,tipo){ const ts=(f.tipos||[]).map(x=>norm(x)); return ts.includes('TODAS AS PECAS')||ts.includes('TODAS')||ts.includes('GERAL')||ts.includes(norm(tipo)); }
-function cotacaoLink(cotId, fornId){ const base=location.href.replace(/index\.html.*$/,'').replace(/\?.*$/,''); return `${base}fornecedor.html?cotacao=${encodeURIComponent(cotId)}&fornecedor=${encodeURIComponent(fornId)}`; }
-function conviteTexto(c,f){ const link=cotacaoLink(c.id,f.id); const total=Object.keys(c.itens||{}).length; return `${f.nome}, cotação #${c.numero}${c.meta?.placa?' - '+c.meta.placa:''}${c.meta?.modelo?' - '+c.meta.modelo:''}\n\nSão ${total} peças para cotar.\nPreencha pelo link:\n${link}\n\nPode salvar parcial. Campos: marca, cód. marca, descrição, preço e disponibilidade.`; }
-function abrirWhats(cotId,fornId){ const c=cotacoes[cotId], f=fornecedores[fornId]; const phone=normalizePhone(f.whatsapp); const text=encodeURIComponent(conviteTexto(c,f)); window.open(`https://wa.me/${phone}?text=${text}`,'_blank'); }
-async function enfileirarWhats(cotId,fornId){ const c=cotacoes[cotId], f=fornecedores[fornId]; const qid='msg_'+Date.now()+'_'+Math.random().toString(16).slice(2,7); await db.ref('whatsappQueue/'+qid).set({id:qid,status:'pending',to:normalizePhone(f.whatsapp),fornecedorId:fornId,fornecedorNome:f.nome,cotacaoId:cotId,cotacaoNumero:c.numero,message:conviteTexto(c,f),createdAt:new Date().toISOString()}); alert('Convite colocado na fila do robô.'); }
-async function enfileirarTodos(cotId){ const c=cotacoes[cotId]; const fs=Object.values(fornecedores).filter(f=>f.ativo); for(const f of fs){ await enfileirarWhats(cotId,f.id); } }
-function bestForItem(c,item){ const resps=c.respostas||{}; let arr=[]; Object.entries(resps).forEach(([fornId,byItem])=>{ const r=byItem?.[item.id]; if(r&&r.tem!==false&&num(r.precoUnitario)>0) arr.push({...r,fornecedorId:fornId,fornecedorNome:fornecedores[fornId]?.nome||r.fornecedorNome||fornId, precoUnitario:num(r.precoUnitario)}); }); arr.sort((a,b)=>a.precoUnitario-b.precoUnitario); return {best:arr[0]||null,all:arr}; }
-function quoteStats(c){ const itens=Object.values(c.itens||{}); let responded=0,lucro=0,custo=0,venda=0; itens.forEach(i=>{ const b=bestForItem(c,i).best; venda+=num(i.vendaUnitario)*num(i.quantidade); if(b){responded++; custo+=num(b.precoUnitario)*num(i.quantidade); lucro+=(num(i.vendaUnitario)-num(b.precoUnitario))*num(i.quantidade); }}); return {total:itens.length,responded,lucro,custo,venda}; }
-function renderFornecedores(){ const fs=Object.values(fornecedores); document.getElementById('fornecedoresBox').innerHTML=fs.length?`<table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Tipos</th><th></th></tr></thead><tbody>${fs.map(f=>`<tr><td>${f.nome}</td><td>${f.whatsapp}</td><td>${(f.tipos||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</td><td><button class="red" onclick="removerFornecedor('${f.id}')">Remover</button></td></tr>`).join('')}</tbody></table>`:'Nenhum fornecedor cadastrado.'; }
-function renderCotacoes(){ const cs=Object.values(cotacoes).sort((a,b)=>String(b.criadaEm).localeCompare(String(a.criadaEm))); if(!cs.length){document.getElementById('cotacoesBox').innerHTML='Nenhuma cotação criada.';return;} document.getElementById('cotacoesBox').innerHTML=cs.map(c=>{ const st=quoteStats(c); const itens=Object.values(c.itens||{}).sort((a,b)=>a.seq-b.seq); const fs=Object.values(fornecedores).filter(f=>f.ativo); return `<div class="quote"><div class="row"><h2>Cotação #${c.numero}</h2><span class="pill">${c.status}</span><span class="pill">${st.responded}/${st.total} peças com resposta</span><span class="pill">Lucro estimado: <b class="${st.lucro>=0?'profitPos':'profitNeg'}">${money(st.lucro)}</b></span></div><div class="muted">${c.meta?.marca||''} ${c.meta?.modelo||''} | Placa ${c.meta?.placa||'-'} | Chassi ${c.meta?.chassi||'-'} | KM ${c.meta?.km||'-'}</div><div class="row"><button onclick="exportarComparativo('${c.id}')">Exportar comparativo XLSX</button><button class="green" onclick="criarOrdemCompra('${c.id}')">Transformar vencedores em Ordem de Compra</button><button class="orange" onclick="enfileirarTodos('${c.id}')">Enviar todos com robô</button></div><details><summary>Fornecedores e links</summary>${fs.map(f=>`<div class="softbox" style="margin:8px 0"><b>${f.nome}</b> — ${f.whatsapp}<br><input value="${cotacaoLink(c.id,f.id)}" onclick="this.select()"><button class="light" onclick="navigator.clipboard.writeText(conviteTexto(cotacoes['${c.id}'],fornecedores['${f.id}']))">Copiar mensagem</button><button onclick="abrirWhats('${c.id}','${f.id}')">Abrir WhatsApp</button><button class="orange" onclick="enfileirarWhats('${c.id}','${f.id}')">Enviar convite com robô</button><button class="gray" onclick="window.open('${cotacaoLink(c.id,f.id)}','_blank')">Abrir formulário</button></div>`).join('')}</details><div class="scroll"><table><thead><tr><th>#</th><th>Cód.</th><th>Peça</th><th>Qtd</th><th>Venda unit.</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro total</th><th>Respostas</th></tr></thead><tbody>${itens.map(i=>{ const br=bestForItem(c,i), b=br.best; const lucro=b?(num(i.vendaUnitario)-num(b.precoUnitario))*num(i.quantidade):0; return `<tr><td>${i.seq}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}<br><span class="mini">${i.tipo}</span></td><td>${i.quantidade}</td><td>${money(i.vendaUnitario)}</td><td>${b?money(b.precoUnitario):'<span class="warn">sem preço</span>'}</td><td>${b?b.fornecedorNome+'<br><span class="mini">'+(b.marca||'')+' '+(b.codigoMarca||'')+'</span>':'-'}</td><td>${b?`<span class="${lucro>=0?'profitPos':'profitNeg'}">${money(lucro)}</span>`:'-'}</td><td>${br.all.map(r=>`${r.fornecedorNome}: ${money(r.precoUnitario)} | ${r.marca||'-'} | ${r.disponibilidade||'-'}`).join('<br>')||'-'}</td></tr>`; }).join('')}</tbody></table></div></div>`; }).join(''); }
-function cotacaoRows(c, vencedoresOnly=false){ const rows=[]; Object.values(c.itens||{}).sort((a,b)=>a.seq-b.seq).forEach(i=>{ const br=bestForItem(c,i); const arr=vencedoresOnly?(br.best?[br.best]:[]):br.all; if(!arr.length) rows.push({'OS':c.numero,'Item':i.seq,'Codigo Original':i.codigoOriginal,'Descricao Original':i.descricaoOriginal,'Qtd':i.quantidade,'Venda Unitario':i.vendaUnitario,'Fornecedor':'SEM COTAÇÃO'}); arr.forEach(r=>{ const compra=num(r.precoUnitario), qtd=num(i.quantidade), venda=num(i.vendaUnitario); rows.push({'OS':c.numero,'Item':i.seq,'Codigo Original':i.codigoOriginal,'Descricao Original':i.descricaoOriginal,'Qtd':qtd,'Venda Unitario':venda,'Venda Total':venda*qtd,'Fornecedor':r.fornecedorNome,'Marca':r.marca||'','Codigo Marca':r.codigoMarca||'','Descricao Fornecedor':r.descricaoFornecedor||'','Compra Unitario':compra,'Compra Total':compra*qtd,'Disponibilidade':r.disponibilidade||'','Lucro Unitario':venda-compra,'Lucro Total':(venda-compra)*qtd}); }); }); return rows; }
-function exportarComparativo(cotId){ const c=cotacoes[cotId]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(cotacaoRows(c,false)),'Comparativo'); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(cotacaoRows(c,true)),'Vencedores'); XLSX.writeFile(wb,`comparativo_${c.numero}.xlsx`); }
-async function criarOrdemCompra(cotId){ const c=cotacoes[cotId]; const itens=[]; Object.values(c.itens||{}).forEach(i=>{ const b=bestForItem(c,i).best; if(b) itens.push({item:i.seq,codigoOriginal:i.codigoOriginal,descricaoOriginal:i.descricaoOriginal,qtd:i.quantidade,vendaUnitario:i.vendaUnitario,fornecedorId:b.fornecedorId,fornecedorNome:b.fornecedorNome,marca:b.marca||'',codigoMarca:b.codigoMarca||'',descricaoFornecedor:b.descricaoFornecedor||'',compraUnitario:num(b.precoUnitario),compraTotal:num(b.precoUnitario)*num(i.quantidade),lucroTotal:(num(i.vendaUnitario)-num(b.precoUnitario))*num(i.quantidade),disponibilidade:b.disponibilidade||''}); }); if(!itens.length) return alert('Nenhuma peça com cotação para virar ordem de compra.'); const ocId='oc_'+safeId(c.numero)+'_'+Date.now(); await db.ref('ordensCompra/'+ocId).set({id:ocId,cotacaoId:cotId,numeroCotacao:c.numero,status:'gerada',itens,criadaEm:new Date().toISOString(),totalCompra:itens.reduce((s,i)=>s+i.compraTotal,0),lucroTotal:itens.reduce((s,i)=>s+i.lucroTotal,0)}); alert('Ordem de compra criada.'); }
-function renderOCs(){ const ocs=Object.values(ordensCompra).sort((a,b)=>String(b.criadaEm).localeCompare(String(a.criadaEm))); document.getElementById('ocsBox').innerHTML=ocs.length?ocs.map(oc=>`<div class="quote"><h3>OC ${oc.id}</h3><div class="muted">Cotação #${oc.numeroCotacao} | Total compra: <b>${money(oc.totalCompra)}</b> | Lucro estimado: <b class="${oc.lucroTotal>=0?'profitPos':'profitNeg'}">${money(oc.lucroTotal)}</b></div><button onclick="exportarOC('${oc.id}')">Exportar OC XLSX</button><details><summary>Ver itens</summary><div class="scroll"><table><thead><tr><th>Fornecedor</th><th>Item</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Compra unit.</th><th>Total</th><th>Disponib.</th></tr></thead><tbody>${(oc.itens||[]).map(i=>`<tr><td>${i.fornecedorNome}</td><td>${i.item}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}<br><span class="mini">${i.marca} ${i.codigoMarca}</span></td><td>${i.qtd}</td><td>${money(i.compraUnitario)}</td><td>${money(i.compraTotal)}</td><td>${i.disponibilidade}</td></tr>`).join('')}</tbody></table></div></details></div>`).join(''):'Nenhuma ordem de compra gerada.'; }
-function exportarOC(id){ const oc=ordensCompra[id]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{OC:oc.id,'Cotacao':oc.numeroCotacao,'Total Compra':oc.totalCompra,'Lucro Estimado':oc.lucroTotal,'Criada em':oc.criadaEm}]),'Resumo'); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(oc.itens||[]),'Itens'); XLSX.writeFile(wb,`ordem_compra_${oc.numeroCotacao}.xlsx`); }
-function importarOrdemCompraPlanilha(){ const file=document.getElementById('fileImportOC').files[0]; if(!file) return alert('Escolha uma planilha.'); const reader=new FileReader(); reader.onload=async e=>{ const wb=XLSX.read(e.target.result,{type:'array'}); const sheet=wb.Sheets['Itens']||wb.Sheets[wb.SheetNames[0]]; const itens=XLSX.utils.sheet_to_json(sheet,{defval:''}); if(!itens.length) return alert('Nenhum item encontrado.'); const ocId='oc_importada_'+Date.now(); const normItens=itens.map(x=>({item:x.item||x.Item||'',codigoOriginal:x.codigoOriginal||x['Codigo Original']||'',descricaoOriginal:x.descricaoOriginal||x['Descricao Original']||'',qtd:num(x.qtd||x.Qtd),fornecedorNome:x.fornecedorNome||x.Fornecedor||'',marca:x.marca||x.Marca||'',codigoMarca:x.codigoMarca||x['Codigo Marca']||'',compraUnitario:num(x.compraUnitario||x['Compra Unitario']),compraTotal:num(x.compraTotal||x['Compra Total']),disponibilidade:x.disponibilidade||x.Disponibilidade||''})); await db.ref('ordensCompra/'+ocId).set({id:ocId,status:'importada',numeroCotacao:'importada',itens:normItens,criadaEm:new Date().toISOString(),totalCompra:normItens.reduce((s,i)=>s+num(i.compraTotal),0),lucroTotal:0}); alert('Planilha importada como ordem de compra.'); }; reader.readAsArrayBuffer(file); }
-function renderFila(){ const qs=Object.values(fila).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,50); document.getElementById('filaBox').innerHTML=`<h3>Últimos itens da fila</h3>${qs.length?`<table><thead><tr><th>Status</th><th>Fornecedor</th><th>Cotação</th><th>Criado</th><th>Erro</th></tr></thead><tbody>${qs.map(q=>`<tr><td>${q.status}</td><td>${q.fornecedorNome}</td><td>${q.cotacaoNumero}</td><td>${q.createdAt||''}</td><td>${q.error||''}</td></tr>`).join('')}</tbody></table>`:'Fila vazia.'}`; }
-function refreshAll(){ document.getElementById('kCot').textContent=Object.keys(cotacoes).length; document.getElementById('kForn').textContent=Object.keys(fornecedores).length; document.getElementById('kOC').textContent=Object.keys(ordensCompra).length; document.getElementById('kFila').textContent=Object.values(fila).filter(q=>q.status==='pending').length; renderFornecedores(); renderCotacoes(); renderOCs(); renderFila(); }
-db.ref('fornecedores').on('value',s=>{fornecedores=s.val()||{}; refreshAll();});
-db.ref('cotacoes').on('value',s=>{cotacoes=s.val()||{}; refreshAll();});
-db.ref('ordensCompra').on('value',s=>{ordensCompra=s.val()||{}; refreshAll();});
-db.ref('whatsappQueue').on('value',s=>{fila=s.val()||{}; refreshAll();});
+const ASSINATURA = "Powered by thIAguinho Soluções Digitais";
+let db, settings={}, suppliers={}, priceDb={}, quotes={}, orders={}, queue={}, robotStatus={};
+let importItems=[], importVehicle={};
+let selectedPrices = new Set();
+
+const defaultMsg = `Olá {fornecedor}, aqui é {estabelecimento}.
+
+Cotação {cotacao} - {veiculo} {placa}
+São {qtd} item(ns).
+
+Por favor, confirme disponibilidade e valor pelo link:
+{link}
+
+{assinatura}`;
+
+function init(){
+  if(!window.firebaseConfig) return alert("firebase-config.js não carregou.");
+  firebase.initializeApp(window.firebaseConfig);
+  db = firebase.database();
+
+  db.ref("settings/main").on("value", s=>{settings=s.val()||{}; hydrateSettings(); renderAll();});
+  db.ref("suppliers").on("value", s=>{suppliers=s.val()||{}; renderAll();});
+  db.ref("priceDb").on("value", s=>{priceDb=s.val()||{}; renderAll();});
+  db.ref("quotes").on("value", s=>{quotes=s.val()||{}; renderAll();});
+  db.ref("purchaseOrders").on("value", s=>{orders=s.val()||{}; renderAll();});
+  db.ref("whatsappQueue").on("value", s=>{queue=s.val()||{}; renderAll();});
+  db.ref("robotStatus/main").on("value", s=>{robotStatus=s.val()||{}; renderAll();});
+}
+function $(id){return document.getElementById(id)}
+function uid(p){return p+"_"+Date.now()+"_"+Math.random().toString(16).slice(2,8)}
+function money(v){const n=Number(v||0);return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function parseMoney(v){if(v==null)return 0;let s=String(v).replace(/[^\d,.-]/g,"").trim();if(!s)return 0;if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"").replace(",",".");else if(s.includes(","))s=s.replace(",",".");const n=Number(s);return Number.isFinite(n)?n:0}
+function norm(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim()}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function phoneBR(p){let d=String(p||"").replace(/\D/g,"");if(d.length===10||d.length===11)d="55"+d;return d}
+function objVals(o){return Object.entries(o||{}).map(([id,v])=>({id,...v}))}
+function supplierName(id){return suppliers[id]?.name || suppliers[id]?.nome || "Fornecedor"}
+function nowBR(){return new Date().toLocaleString("pt-BR")}
+function baseUrl(){return location.origin + location.pathname.replace(/index\.html.*$/,"")}
+
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+function showTab(id){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));
+  document.querySelectorAll(".tabpage").forEach(p=>p.classList.toggle("hidden",p.id!==id));
+}
+function renderAll(){
+  renderStats(); renderSuppliers(); renderPriceSelects(); renderPriceDb(); renderQuotes(); renderOrders(); renderRobot();
+}
+function hydrateSettings(){
+  if($("set_name") && document.activeElement?.id?.startsWith("set_")!==true){
+    $("set_name").value=settings.name||"";
+    $("set_phone").value=settings.phone||"";
+    $("set_city").value=settings.city||"";
+    $("set_owner").value=settings.owner||"";
+    $("set_msg").value=settings.messageTemplate||defaultMsg;
+  }
+}
+function saveSettings(){
+  const data={name:$("set_name").value.trim(),phone:$("set_phone").value.trim(),city:$("set_city").value.trim(),owner:$("set_owner").value.trim(),messageTemplate:$("set_msg").value.trim()||defaultMsg,updatedAt:Date.now()};
+  db.ref("settings/main").set(data).then(()=>alert("Estabelecimento salvo."));
+}
+function saveSupplier(){
+  const id = uid("sup");
+  const data={name:$("sup_name").value.trim(),phone:phoneBR($("sup_phone").value),types:$("sup_types").value.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean),note:$("sup_note").value.trim(),active:true,createdAt:Date.now()};
+  if(!data.name||!data.phone)return alert("Preencha nome e WhatsApp.");
+  db.ref("suppliers/"+id).set(data).then(()=>{["sup_name","sup_phone","sup_types","sup_note"].forEach(i=>$(i).value="");});
+}
+function editSupplier(id){
+  const s=suppliers[id]; if(!s)return;
+  $("sup_name").value=s.name||""; $("sup_phone").value=s.phone||""; $("sup_types").value=(s.types||[]).join(", "); $("sup_note").value=s.note||"";
+  db.ref("suppliers/"+id).remove();
+  showTab("fornecedores");
+}
+function renderSuppliers(){
+  const list=objVals(suppliers);
+  $("suppliersList").innerHTML = !list.length ? "<p class='muted'>Nenhum fornecedor cadastrado.</p>" : `<table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Tipos</th><th>Ações</th></tr></thead><tbody>${list.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.phone)}</td><td>${(s.types||[]).map(t=>`<span class='pill'>${esc(t)}</span>`).join("")}</td><td><button class='light' onclick="editSupplier('${s.id}')">Editar</button><button class='red' onclick="db.ref('suppliers/${s.id}').remove()">Remover</button></td></tr>`).join("")}</tbody></table>`;
+}
+function renderPriceSelects(){
+  const opts = `<option value="">Selecione</option>` + objVals(suppliers).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  ["price_supplier","price_filter_supplier"].forEach(id=>{ if($(id)){ const old=$(id).value; $(id).innerHTML = id==="price_filter_supplier" ? `<option value="">Todos</option>`+opts.replace('<option value="">Selecione</option>','') : opts; if(old)$(id).value=old; }});
+}
+function savePriceItem(){
+  const data={
+    supplierId:$("price_supplier").value, oem:$("price_oem").value.trim(), desc:$("price_desc").value.trim(), brand:$("price_brand").value.trim(),
+    brandCode:$("price_brandCode").value.trim(), price:parseMoney($("price_value").value), availability:$("price_avail").value.trim(),
+    obs:$("price_obs").value.trim(), updatedAt:Date.now(), signature:ASSINATURA
+  };
+  if(!data.desc || !data.price) return alert("Preencha descrição e preço.");
+  db.ref("priceDb/"+uid("price")).set(data).then(()=>{["price_oem","price_desc","price_brand","price_brandCode","price_value","price_avail","price_obs"].forEach(i=>$(i).value="");alert("Preço salvo.");});
+}
+function renderPriceDb(){
+  const q=norm($("price_search")?.value||""); const fs=$("price_filter_supplier")?.value||"";
+  let list=objVals(priceDb).filter(p=>{
+    if(fs && p.supplierId!==fs)return false;
+    if(!q)return true;
+    return norm([p.oem,p.desc,p.brand,p.brandCode,supplierName(p.supplierId)].join(" ")).includes(q);
+  }).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  $("priceList").innerHTML = !list.length ? "<p class='muted'>Nenhum preço encontrado.</p>" : `<table><thead><tr><th></th><th>Produto</th><th>Fornecedor</th><th>Marca/cód.</th><th>Preço</th><th>Disp.</th><th>Ações</th></tr></thead><tbody>${list.map(p=>`<tr>
+    <td><input type="checkbox" ${selectedPrices.has(p.id)?"checked":""} onchange="this.checked?selectedPrices.add('${p.id}'):selectedPrices.delete('${p.id}')"></td>
+    <td><b>${esc(p.desc)}</b><br><span class='muted'>OEM: ${esc(p.oem||"-")}</span></td>
+    <td>${esc(supplierName(p.supplierId))}</td>
+    <td>${esc(p.brand||"-")}<br><span class='muted'>${esc(p.brandCode||"-")}</span></td>
+    <td><b>${money(p.price)}</b></td><td>${esc(p.availability||"-")}</td>
+    <td><button class='light' onclick="usePriceAsForm('${p.id}')">Editar como novo</button><button class='red' onclick="db.ref('priceDb/${p.id}').remove()">Excluir</button></td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function usePriceAsForm(id){
+  const p=priceDb[id]; if(!p)return;
+  $("price_supplier").value=p.supplierId||"";$("price_oem").value=p.oem||"";$("price_desc").value=p.desc||"";$("price_brand").value=p.brand||"";$("price_brandCode").value=p.brandCode||"";$("price_value").value=String(p.price||"").replace(".",",");$("price_avail").value=p.availability||"";$("price_obs").value=p.obs||"";
+}
+function clearPriceSelection(){selectedPrices.clear();renderPriceDb();}
+function createPriceCheckQuote(){
+  const selected=[...selectedPrices].map(id=>({id,...priceDb[id]})).filter(x=>x.desc);
+  if(!selected.length)return alert("Selecione itens do banco de preços.");
+  const number=prompt("Número da cotação de conferência:", "CONF-"+new Date().toISOString().slice(0,10));
+  if(!number)return;
+  const qid=uid("quote");
+  const items=selected.map((p,i)=>({id:uid("item"),sourcePriceId:p.id,seq:i+1,oem:p.oem||"",desc:p.desc,qty:1,type:"conferencia",saleUnit:p.price||0,lastKnownPrice:p.price||0,targetSupplierId:p.supplierId||"",brand:p.brand||"",brandCode:p.brandCode||"",availability:p.availability||""}));
+  const quote={id:qid,number,status:"open",kind:"priceCheck",vehicle:{model:"Conferência de preço",plate:""},items,responses:{},createdAt:Date.now(),signature:ASSINATURA};
+  db.ref("quotes/"+qid).set(quote).then(()=>{selectedPrices.clear();showTab("cotacoes");alert("Cotação de conferência criada.");});
+}
+function previewImport(){
+  const file=$("imp_file").files[0]; if(!file)return alert("Escolha uma planilha.");
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+    const rows=[]; wb.SheetNames.forEach(n=>rows.push(...XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:""})));
+    importVehicle=extractVehicle(rows);
+    importItems=parsePieces(rows);
+    renderImportPreview();
+  };
+  reader.readAsArrayBuffer(file);
+}
+function extractVehicle(rows){
+  const info={}; rows.forEach(r=>r.forEach((c,i)=>{const k=norm(c),v=r[i+1]; if(!v)return; if(k.includes("PLACA"))info.plate=v; if(k.includes("CHASSI"))info.chassi=v; if(k.includes("MODELO")||k.includes("VEICULO"))info.model=v; if(k==="MARCA")info.brand=v; if(k==="ANO")info.year=v; if(k==="KM")info.km=v; if(k.includes("PREFIXO"))info.prefix=v;})); return info;
+}
+function parsePieces(rows){
+  const out=[];
+  rows.forEach((r,idx)=>{
+    const cells=r.map(x=>String(x??"").trim());
+    const joined=norm(cells.join(" "));
+    if(joined.includes("SERVICO")) return;
+    const first=norm(cells[0]);
+    const isPiece = first.includes("PECA") || joined.startsWith("PECA / COD") || joined.includes("PECA / COD");
+    if(!isPiece) return;
+    let code="",desc="",qty=1,unit=0,total=0,discount=0;
+    for(let i=0;i<cells.length;i++){
+      const c=cells[i];
+      if(!code && /[A-Z0-9]{5,}/i.test(c) && !norm(c).includes("PECA")) code=c;
+      if(!desc && c.length>8 && !/[R$]/.test(c) && !/^\d+[,.]?\d*$/.test(c) && !norm(c).includes("PECA")) desc=c;
+    }
+    const nums=cells.map(parseMoney).filter(n=>n>0);
+    if(nums.length){ qty = nums.find(n=>n>0 && n<1000) || 1; total = nums[nums.length-1] || 0; unit = total && qty ? total/qty : 0; }
+    if(!desc && cells[2])desc=cells[2];
+    if(!code) code="sem oem";
+    if(desc && norm(desc)!=="DESCRICAO"){
+      out.push({id:uid("item"),seq:out.length+1,line:idx+1,oem:code,desc,qty,type:classify(desc),saleUnit:unit,saleTotal:unit*qty,discount,totalPlan:total,raw:cells.join(" | ")});
+    }
+  });
+  return out;
+}
+function classify(desc){const d=norm(desc); if(/DISCO|PASTILHA|FREIO/.test(d))return"freio"; if(/BATERIA|FAROL|LANTERNA|SENSOR|RESISTOR/.test(d))return"eletrica"; if(/RADIADOR|ADITIVO|AGUA|VENTOINHA/.test(d))return"arrefecimento"; if(/PARACHOQUE|CAPO|PORTA|GRADE|TAMPA|ASSENTO|TAPETE/.test(d))return"lataria"; if(/MOTOR|COXIM|CORREIA|FILTRO|OLEO/.test(d))return"motor"; return"geral";}
+function renderImportPreview(){
+  const total=importItems.reduce((s,i)=>s+(i.saleUnit||0)*(i.qty||1),0);
+  $("importPreview").innerHTML=`<div class='success'><b>${importItems.length}</b> peças encontradas. Valor base de venda: <b>${money(total)}</b></div>
+  <details open><summary>Ver peças</summary><div class='tablewrap'><table><thead><tr><th>#</th><th>Cód.</th><th>Descrição</th><th>Qtd</th><th>Venda base</th><th>Tipo</th></tr></thead><tbody>${importItems.map(i=>`<tr><td>${i.seq}</td><td>${esc(i.oem)}</td><td>${esc(i.desc)}</td><td>${i.qty}</td><td>${money((i.saleUnit||0)*(i.qty||1))}</td><td>${esc(i.type)}</td></tr>`).join("")}</tbody></table></div></details>`;
+}
+function createQuoteFromImport(){
+  if(!importItems.length)return alert("Importe a planilha primeiro.");
+  const qid=uid("quote"); const number=$("imp_number").value.trim()||("OS-"+Date.now());
+  const quote={id:qid,number,status:"open",kind:"normal",vehicle:importVehicle,items:importItems,responses:{},createdAt:Date.now(),signature:ASSINATURA};
+  db.ref("quotes/"+qid).set(quote).then(()=>{alert("Cotação online criada.");showTab("cotacoes");});
+}
+function supplierMatchesItem(s,item){
+  const types=(s.types||[]).map(x=>String(x).toLowerCase());
+  return types.includes("todas as peças")||types.includes("todas as pecas")||types.includes("geral")||types.includes(item.type)||quoteKindPriceTarget(s,item);
+}
+function quoteKindPriceTarget(s,item){return item.targetSupplierId && item.targetSupplierId===s.id}
+function quoteLink(qid,sid){
+  const token = btoa(qid+"|"+sid+"|valorIA").replaceAll("=","");
+  db.ref(`quotes/${qid}/links/${sid}`).update({token,supplierId:sid,createdAt:Date.now()});
+  return `${baseUrl()}fornecedor.html?q=${encodeURIComponent(qid)}&s=${encodeURIComponent(sid)}&t=${encodeURIComponent(token)}`;
+}
+function buildMessage(q,sid){
+  const s=suppliers[sid]||{}; const items=(q.items||[]).filter(i=>q.kind==="priceCheck"?i.targetSupplierId===sid:supplierMatchesItem({...s,id:sid},i));
+  const link=quoteLink(q.id,sid);
+  const tpl=settings.messageTemplate||defaultMsg;
+  return tpl.replaceAll("{fornecedor}",s.name||"Fornecedor")
+    .replaceAll("{estabelecimento}",settings.name||"Estabelecimento")
+    .replaceAll("{cotacao}",q.number||q.id)
+    .replaceAll("{veiculo}",q.vehicle?.model||"")
+    .replaceAll("{placa}",q.vehicle?.plate||"")
+    .replaceAll("{qtd}",items.length)
+    .replaceAll("{link}",link)
+    .replaceAll("{assinatura}",ASSINATURA);
+}
+function enqueueWhatsapp(qid,sid){
+  const q=quotes[qid]; const s=suppliers[sid]; if(!q||!s)return;
+  if(q.status==="closed")return alert("Cotação encerrada. Reabra se precisar enviar.");
+  const msg=buildMessage(q,sid);
+  db.ref("whatsappQueue/"+uid("wa")).set({quoteId:qid,supplierId:sid,phone:phoneBR(s.phone),message:msg,status:"pending",createdAt:Date.now(),signature:ASSINATURA}).then(()=>alert("Convite entrou na fila do robô."));
+}
+function openWa(qid,sid){
+  const s=suppliers[sid]; if(!s)return;
+  const msg=buildMessage(quotes[qid],sid);
+  window.open(`https://wa.me/${phoneBR(s.phone)}?text=${encodeURIComponent(msg)}`,"_blank");
+}
+function copyMsg(qid,sid){navigator.clipboard.writeText(buildMessage(quotes[qid],sid));alert("Mensagem copiada.");}
+function renderQuotes(){
+  const list=objVals(quotes).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  $("quotesList").innerHTML = !list.length ? "<p class='muted'>Nenhuma cotação.</p>" : list.map(q=>renderQuote(q)).join("");
+  $("latestQuotes").innerHTML = list.slice(0,5).map(q=>`<div class='quote ${q.status==="closed"?"closed":""}'><b>${esc(q.number)}</b> — ${q.status==="closed"?"Encerrada":"Aberta"} — ${q.items?.length||0} itens</div>`).join("")||"<p class='muted'>Sem cotações.</p>";
+}
+function renderQuote(q){
+  const suppliersForQuote = objVals(suppliers).filter(s=>(q.items||[]).some(i=>q.kind==="priceCheck"?i.targetSupplierId===s.id:supplierMatchesItem(s,i)));
+  const winners=calcWinners(q); const lucro=winners.reduce((s,w)=>s+(w.profit||0),0);
+  const answered=winners.filter(w=>w.winner).length; const pct=(q.items?.length?Math.round(answered/(q.items.length)*100):0);
+  return `<div class='quote ${q.status==="closed"?"closed":""}'>
+    <div class='row'><h3>${esc(q.number)} ${q.status==="closed"?"<span class='pill'>encerrada</span>":"<span class='pill'>aberta</span>"}</h3></div>
+    <p class='muted'>${esc(q.vehicle?.model||"")} ${esc(q.vehicle?.plate||"")} — ${q.items?.length||0} item(ns) — respondidos ${answered}/${q.items?.length||0}</p>
+    <div class='bar'><span style='width:${pct}%'></span></div>
+    <p><b>Lucro estimado com melhores preços:</b> <span class='ok'>${money(lucro)}</span></p>
+    <div class='row'>
+      ${q.status==="closed"?`<button class='green' onclick="reopenQuote('${q.id}')">Reabrir cotação</button>`:`<button class='red' onclick="closeQuote('${q.id}')">Encerrar cotação</button>`}
+      <button onclick="generateOrder('${q.id}')">Gerar ordem de compra</button>
+      <button class='light' onclick="exportComparison('${q.id}')">Exportar comparativo XLSX</button>
+    </div>
+    <details><summary>Enviar convite aos fornecedores</summary>${suppliersForQuote.map(s=>`<div class='quote'><b>${esc(s.name)}</b><br><button onclick="enqueueWhatsapp('${q.id}','${s.id}')">Enviar com robô</button><button class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar mensagem</button><button class='light' onclick="window.open('${quoteLink(q.id,s.id)}','_blank')">Abrir formulário</button></div>`).join("")||"<p class='muted'>Nenhum fornecedor compatível.</p>"}</details>
+    <details><summary>Melhores opções e lucro</summary><div class='tablewrap'><table><thead><tr><th>Peça</th><th>Venda base</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro</th></tr></thead><tbody>${winners.map(w=>`<tr><td><b>${esc(w.item.desc)}</b><br><span class='muted'>${esc(w.item.oem)} | Qtd ${w.item.qty}</span></td><td>${money(w.saleTotal)}</td><td>${w.winner?money(w.buyTotal):"<span class='bad'>sem resposta</span>"}</td><td>${w.winner?`${esc(w.winner.supplierName)}<br>${esc(w.winner.brand||"-")} ${esc(w.winner.brandCode||"")}`:"-"}</td><td class='${w.profit>=0?"ok":"bad"}'>${w.winner?money(w.profit):"-"}</td></tr>`).join("")}</tbody></table></div></details>
+  </div>`;
+}
+function closeQuote(id){if(confirm("Encerrar cotação? Ela não ficará mais visível para vendedores."))db.ref("quotes/"+id).update({status:"closed",closedAt:Date.now()});}
+function reopenQuote(id){if(confirm("Reabrir cotação para vendedores?"))db.ref("quotes/"+id).update({status:"open",reopenedAt:Date.now()});}
+function calcWinners(q){
+  const resp=q.responses||{};
+  return (q.items||[]).map(item=>{
+    const all=[]; Object.entries(resp).forEach(([sid,byItem])=>{const r=byItem?.[item.id]; if(r && r.available!==false && parseMoney(r.price)>0) all.push({...r,supplierId:sid,supplierName:supplierName(sid),price:parseMoney(r.price)});});
+    all.sort((a,b)=>a.price-b.price);
+    const win=all[0]||null; const saleTotal=(Number(item.saleUnit||item.lastKnownPrice||0))*(Number(item.qty||1)); const buyTotal=win?win.price*Number(item.qty||1):0;
+    return {item,responses:all,winner:win,saleTotal,buyTotal,profit:win?saleTotal-buyTotal:0};
+  });
+}
+function generateOrder(qid){
+  const q=quotes[qid]; if(!q)return;
+  const winners=calcWinners(q).filter(w=>w.winner);
+  if(!winners.length)return alert("Nenhum item com resposta vencedora.");
+  const grouped={}; winners.forEach(w=>{const sid=w.winner.supplierId; if(!grouped[sid])grouped[sid]=[]; grouped[sid].push(w);});
+  Object.entries(grouped).forEach(([sid,items])=>{
+    const oid=uid("oc");
+    const total=items.reduce((s,w)=>s+w.buyTotal,0); const profit=items.reduce((s,w)=>s+w.profit,0);
+    const oc={id:oid,quoteId:qid,quoteNumber:q.number,supplierId:sid,supplierName:supplierName(sid),status:"aberta",createdAt:Date.now(),total,profit,items:items.map(w=>({itemId:w.item.id,oem:w.item.oem,desc:w.item.desc,qty:w.item.qty,brand:w.winner.brand||"",brandCode:w.winner.brandCode||"",supplierDesc:w.winner.desc||"",priceUnit:w.winner.price,total:w.buyTotal,availability:w.winner.availability||"",saleTotal:w.saleTotal,profit:w.profit})),signature:ASSINATURA};
+    db.ref("purchaseOrders/"+oid).set(oc);
+  });
+  alert("Ordem(ns) de compra gerada(s).");
+}
+function renderOrders(){
+  const list=objVals(orders).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  $("ordersList").innerHTML=!list.length?"<p class='muted'>Nenhuma ordem de compra.</p>":list.map(o=>`<div class='quote'><h3>OC ${esc(o.id)} — ${esc(o.supplierName)}</h3><p>Cotação ${esc(o.quoteNumber)} | Total compra: <b>${money(o.total)}</b> | Lucro estimado: <span class='ok'>${money(o.profit)}</span></p><button onclick="exportOrder('${o.id}')">Exportar OC XLSX</button><details><summary>Ver itens</summary><table><thead><tr><th>Peça</th><th>Qtd</th><th>Marca</th><th>Unit.</th><th>Total</th><th>Disp.</th></tr></thead><tbody>${(o.items||[]).map(i=>`<tr><td>${esc(i.desc)}<br><span class='muted'>${esc(i.oem)}</span></td><td>${i.qty}</td><td>${esc(i.brand)} ${esc(i.brandCode)}</td><td>${money(i.priceUnit)}</td><td>${money(i.total)}</td><td>${esc(i.availability||"")}</td></tr>`).join("")}</tbody></table></details><div class='signature'>${ASSINATURA}</div></div>`).join("");
+}
+function exportOrder(id){
+  const o=orders[id]; if(!o)return;
+  const rows=[["VALORIA_OC",ASSINATURA],["OC",o.id],["Fornecedor",o.supplierName],["Cotacao",o.quoteNumber],[],["OEM","Descrição","Qtd","Marca","Código marca","Preço unit.","Total","Disponibilidade","Lucro estimado"]];
+  (o.items||[]).forEach(i=>rows.push([i.oem,i.desc,i.qty,i.brand,i.brandCode,i.priceUnit,i.total,i.availability,i.profit]));
+  rows.push([],["Powered by","thIAguinho Soluções Digitais"]);
+  downloadXlsx(rows,`OC_${o.quoteNumber}_${o.supplierName}.xlsx`);
+}
+function exportComparison(qid){
+  const q=quotes[qid]; if(!q)return;
+  const rows=[["VALORIA_COMPARATIVO",ASSINATURA],["Cotacao",q.number],[],["OEM","Descrição","Qtd","Venda base","Fornecedor vencedor","Marca","Cód. marca","Compra unit.","Compra total","Disponibilidade","Lucro"]];
+  calcWinners(q).forEach(w=>rows.push([w.item.oem,w.item.desc,w.item.qty,w.saleTotal,w.winner?.supplierName||"",w.winner?.brand||"",w.winner?.brandCode||"",w.winner?.price||"",w.buyTotal||"",w.winner?.availability||"",w.profit||""]));
+  rows.push([],["Powered by","thIAguinho Soluções Digitais"]);
+  downloadXlsx(rows,`Comparativo_${q.number}.xlsx`);
+}
+function downloadXlsx(rows,name){const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"valorIA");XLSX.writeFile(wb,name);}
+function importOrderXlsx(){
+  const f=$("oc_file").files[0]; if(!f)return alert("Escolha a planilha.");
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+    if(!String(rows[0]?.[0]||"").includes("VALORIA")) return alert("Esta planilha não parece ter sido gerada pelo valor_IA.");
+    alert("Planilha reconhecida pelo sistema. Importação de OC registrada.");
+    db.ref("purchaseOrders/"+uid("oc_importada")).set({id:uid("oc_importada"),quoteNumber:"importada",supplierName:"Importada de XLSX",total:0,profit:0,items:[],createdAt:Date.now(),signature:ASSINATURA});
+  };
+  reader.readAsArrayBuffer(f);
+}
+function renderStats(){
+  const qlist=objVals(quotes), plist=objVals(priceDb), qqueue=objVals(queue);
+  $("statOpen").textContent=qlist.filter(q=>q.status!=="closed").length;
+  $("statPrices").textContent=plist.length;
+  $("statQueue").textContent=qqueue.filter(q=>q.status==="pending").length;
+}
+function renderRobot(){
+  $("robotStatus").innerHTML=`<div class='success'><b>Status:</b> ${esc(robotStatus.status||"sem informação")}<br><b>Enviadas hoje:</b> ${robotStatus.sentToday||0}/100<br><b>Atualizado:</b> ${robotStatus.updatedAt?new Date(robotStatus.updatedAt).toLocaleString("pt-BR"):"-"}</div>`;
+  const q=objVals(queue).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,30);
+  $("queueList").innerHTML=`<h3>Fila recente</h3>${!q.length?"<p class='muted'>Fila vazia.</p>":`<table><thead><tr><th>Status</th><th>Fornecedor</th><th>Telefone</th><th>Mensagem</th></tr></thead><tbody>${q.map(x=>`<tr><td>${esc(x.status)}</td><td>${esc(supplierName(x.supplierId))}</td><td>${esc(x.phone)}</td><td>${esc((x.message||"").slice(0,100))}</td></tr>`).join("")}</tbody></table>`}`;
+}
+window.addEventListener("load", init);
 </script>
 </body>
 </html>
