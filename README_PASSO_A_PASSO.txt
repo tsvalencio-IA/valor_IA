@@ -1,4 +1,4 @@
-VALORIA V12 - BANCO DE PREÇOS + COTAÇÃO + ROBÔ + ENCERRAR COTAÇÃO
+VALORIA V13 - BANCO DE PREÇOS + COTAÇÃO + ROBÔ + ENCERRAR COTAÇÃO
 
 ARQUIVOS PARA SUBIR NO GITHUB PAGES
 Suba estes arquivos na raiz do repositório valor_IA:
@@ -39,3 +39,14 @@ Serve para pesquisar preços já conhecidos e mandar ao fornecedor confirmar:
 ASSINATURA
 Rodapé e planilhas exportadas usam:
 Powered by thIAguinho Soluções Digitais
+
+
+NOVIDADES DA V13
+- Importação corrigida para dois modelos reais:
+  1) linhas com PEÇA / CÓD.
+  2) tabela GRADE / CÓDIGO DA PEÇA
+- Serviços são ignorados na importação.
+- Prévia mostra padrão detectado, linha da planilha, código original, código alternativo, quantidade, valor unitário e total.
+- Cabeçalho redesenhado com visual comercial.
+- Cadastro do estabelecimento ganhou nicho e ícone editável.
+- Nichos prontos: autopeças/oficina, construção, farmácia, agro/pet, informática, mercado, papelaria, restaurante, hotelaria, estética, marcenaria, ferragens, elétrica, hidráulica, limpeza, EPI, eventos, clínicas e transportes.

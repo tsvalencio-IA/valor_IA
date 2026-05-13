@@ -16,13 +16,23 @@
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
-    header{background:linear-gradient(90deg,#fff,#eef5ff);border-bottom:1px solid var(--line);padding:18px 22px}
-    header h1{margin:0;font-size:24px;letter-spacing:.2px}
-    header p{margin:6px 0 0;color:var(--muted)}
+    header.hero{background:
+      radial-gradient(circle at 10% 10%, rgba(37,99,235,.18), transparent 26%),
+      radial-gradient(circle at 90% 20%, rgba(22,163,74,.16), transparent 24%),
+      linear-gradient(120deg,#ffffff,#edf5ff 52%,#f7fff8);
+      border-bottom:1px solid var(--line);padding:20px 22px}
+    .heroTop{max-width:1220px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .brandBlock{display:flex;align-items:center;gap:14px}
+    .brandIcon{width:58px;height:58px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:30px;background:#fff;box-shadow:var(--shadow);border:1px solid var(--line)}
+    header h1{margin:0;font-size:26px;letter-spacing:.2px}
+    header p{margin:6px 0 0;color:var(--muted);max-width:720px}
+    .heroBadges{display:flex;gap:8px;flex-wrap:wrap}
+    .heroBadges span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 10px;font-size:13px;color:#334155;box-shadow:0 6px 18px rgba(15,23,42,.05)}
     main{max-width:1220px;margin:auto;padding:18px}
     .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
-    .tab{border:1px solid var(--line);background:#eaf0f8;border-radius:14px;padding:11px 14px;font-weight:700;cursor:pointer;color:#27354a}
-    .tab.active{background:var(--blue);color:white;border-color:var(--blue)}
+    .tab{border:1px solid var(--line);background:#eef4fb;border-radius:14px;padding:11px 14px;font-weight:800;cursor:pointer;color:#27354a;transition:.15s}
+    .tab:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.06)}
+    .tab.active{background:linear-gradient(135deg,var(--blue),#1d4ed8);color:white;border-color:var(--blue)}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -53,9 +63,22 @@
   </style>
 </head>
 <body>
-<header>
-  <h1>valor_IA — Sistema de Cotação Inteligente</h1>
-  <p>Banco de preços + cotação por link + robô WhatsApp local + ordem de compra.</p>
+<header class="hero">
+  <div class="heroTop">
+    <div class="brandBlock">
+      <div class="brandIcon" id="brandIcon">🧾</div>
+      <div>
+        <h1 id="brandTitle">valor_IA — Cotação Inteligente</h1>
+        <p id="brandSubtitle">Peças, produtos, fornecedores, banco de preços e ordens de compra em tempo real.</p>
+      </div>
+    </div>
+    <div class="heroBadges">
+      <span>📦 Produtos</span>
+      <span>💬 WhatsApp</span>
+      <span>📊 Lucro</span>
+      <span>🧾 Ordem de compra</span>
+    </div>
+  </div>
 </header>
 
 <main>
@@ -90,6 +113,11 @@
         <div><label>WhatsApp da loja</label><input id="set_phone" placeholder="5517999999999"></div>
         <div><label>Cidade/UF</label><input id="set_city" placeholder="São José do Rio Preto/SP"></div>
         <div><label>Responsável</label><input id="set_owner" placeholder="Nome do responsável"></div>
+        <div><label>Nicho do cliente</label><select id="set_niche"></select></div>
+        <div><label>Ícone personalizado</label><input id="set_icon" placeholder="Ex: 🔧, 🧱, 💊, 🐾"></div>
+      </div>
+      <div class="alert">
+        Nichos prontos para vender: autopeças/oficina, materiais de construção, farmácia, agro/pet, informática, mercado, papelaria, restaurante, hotelaria, estética, marcenaria, ferragens, elétricos, hidráulica, limpeza, EPI, eventos, clínicas e transportes.
       </div>
       <label>Mensagem padrão enviada ao fornecedor</label>
       <textarea id="set_msg"></textarea>
@@ -158,7 +186,7 @@
       </div>
       <button onclick="previewImport()">Importar somente PEÇAS</button>
       <button class="green" onclick="createQuoteFromImport()">Criar cotação online</button>
-      <p class="muted">A importação tenta aceitar apenas linhas que começam como PEÇA / CÓD. e ignora SERVIÇO.</p>
+      <p class="muted">Importação inteligente: aceita planilhas no padrão <b>PEÇA / CÓD.</b> e também tabelas com <b>GRADE / CÓDIGO DA PEÇA</b>. Serviços são ignorados.</p>
       <div id="importPreview"></div>
     </div>
   </section>
@@ -206,8 +234,31 @@
 <script>
 const ASSINATURA = "Powered by thIAguinho Soluções Digitais";
 let db, settings={}, suppliers={}, priceDb={}, quotes={}, orders={}, queue={}, robotStatus={};
-let importItems=[], importVehicle={};
+let importItems=[], importVehicle={}, importPattern="";
 let selectedPrices = new Set();
+
+const NICHOS = [
+  {id:"autopecas", icon:"🔧", label:"Autopeças / Oficina / Frota", hint:"Cotação de peças automotivas, OS, compra e lucro."},
+  {id:"construcao", icon:"🧱", label:"Materiais de construção", hint:"Cimento, areia, tubos, elétrica, hidráulica e acabamento."},
+  {id:"farmacia", icon:"💊", label:"Farmácia / Drogaria", hint:"Medicamentos OTC, perfumaria e reposição."},
+  {id:"agro_pet", icon:"🐾", label:"Agropecuária / Pet shop", hint:"Rações, medicamentos pet, sementes, ferramentas e insumos."},
+  {id:"informatica", icon:"💻", label:"Informática / Eletrônicos", hint:"Peças, periféricos, manutenção e revenda."},
+  {id:"mercado", icon:"🛒", label:"Mercado / Mercearia", hint:"Produtos de giro, bebidas, limpeza e frios."},
+  {id:"papelaria", icon:"📚", label:"Papelaria / Escritório", hint:"Material escolar, escritório, toner e suprimentos."},
+  {id:"restaurante", icon:"🍽️", label:"Restaurante / Food service", hint:"Alimentos, embalagens, bebidas e insumos."},
+  {id:"hotelaria", icon:"🏨", label:"Hotel / Pousada", hint:"Enxoval, limpeza, manutenção e amenidades."},
+  {id:"estetica", icon:"💅", label:"Estética / Salão / Barbearia", hint:"Cosméticos, equipamentos, descartáveis e reposição."},
+  {id:"marcenaria", icon:"🪵", label:"Marcenaria / Móveis", hint:"Chapas, ferragens, cola, fita de borda e acessórios."},
+  {id:"ferragens", icon:"🔩", label:"Ferragens / Metalúrgica", hint:"Parafusos, chapas, barras, ferramentas e EPI."},
+  {id:"eletricos", icon:"⚡", label:"Elétrica / Iluminação", hint:"Cabos, disjuntores, lâmpadas, luminárias e quadros."},
+  {id:"hidraulica", icon:"🚰", label:"Hidráulica / Piscina", hint:"Tubos, conexões, bombas, registros e produtos químicos."},
+  {id:"limpeza", icon:"🧼", label:"Limpeza / Higiene", hint:"Químicos, descartáveis, papel, sacos e equipamentos."},
+  {id:"epi", icon:"🥽", label:"Uniformes / EPI", hint:"Luvas, botas, capacetes, uniformes e sinalização."},
+  {id:"eventos", icon:"🎪", label:"Eventos / Festas", hint:"Buffet, decoração, locação, som, iluminação e bebidas."},
+  {id:"clinicas", icon:"🦷", label:"Clínicas / Odonto", hint:"Materiais clínicos, descartáveis, manutenção e limpeza."},
+  {id:"transportes", icon:"🚚", label:"Transportes / Logística", hint:"Pneus, manutenção, peças, combustível e insumos."},
+  {id:"generico", icon:"🧾", label:"Cotação genérica de produtos", hint:"Qualquer compra com fornecedores e comparação de preços."}
+];
 
 const defaultMsg = `Olá {fornecedor}, aqui é {estabelecimento}.
 
@@ -220,6 +271,7 @@ Por favor, confirme disponibilidade e valor pelo link:
 {assinatura}`;
 
 function init(){
+  renderNicheOptions();
   if(!window.firebaseConfig) return alert("firebase-config.js não carregou.");
   firebase.initializeApp(window.firebaseConfig);
   db = firebase.database();
@@ -252,17 +304,43 @@ function showTab(id){
 function renderAll(){
   renderStats(); renderSuppliers(); renderPriceSelects(); renderPriceDb(); renderQuotes(); renderOrders(); renderRobot();
 }
+function renderNicheOptions(){
+  const sel=$("set_niche"); if(!sel)return;
+  sel.innerHTML=NICHOS.map(n=>`<option value="${n.id}">${n.icon} ${n.label}</option>`).join("");
+}
+function currentNiche(){
+  return NICHOS.find(n=>n.id===(settings.niche||"autopecas")) || NICHOS[0];
+}
+function applyBrandVisual(){
+  const n=currentNiche();
+  const icon=settings.customIcon||n.icon||"🧾";
+  if($("brandIcon")) $("brandIcon").textContent=icon;
+  if($("brandTitle")) $("brandTitle").textContent=`${settings.name||"valor_IA"} — Cotação Inteligente`;
+  if($("brandSubtitle")) $("brandSubtitle").textContent=n.hint || "Cotação por link, banco de preços, fornecedores e ordem de compra.";
+}
 function hydrateSettings(){
+  applyBrandVisual();
   if($("set_name") && document.activeElement?.id?.startsWith("set_")!==true){
     $("set_name").value=settings.name||"";
     $("set_phone").value=settings.phone||"";
     $("set_city").value=settings.city||"";
     $("set_owner").value=settings.owner||"";
+    $("set_niche").value=settings.niche||"autopecas";
+    $("set_icon").value=settings.customIcon||"";
     $("set_msg").value=settings.messageTemplate||defaultMsg;
   }
 }
 function saveSettings(){
-  const data={name:$("set_name").value.trim(),phone:$("set_phone").value.trim(),city:$("set_city").value.trim(),owner:$("set_owner").value.trim(),messageTemplate:$("set_msg").value.trim()||defaultMsg,updatedAt:Date.now()};
+  const data={
+    name:$("set_name").value.trim(),
+    phone:$("set_phone").value.trim(),
+    city:$("set_city").value.trim(),
+    owner:$("set_owner").value.trim(),
+    niche:$("set_niche").value||"autopecas",
+    customIcon:$("set_icon").value.trim(),
+    messageTemplate:$("set_msg").value.trim()||defaultMsg,
+    updatedAt:Date.now()
+  };
   db.ref("settings/main").set(data).then(()=>alert("Estabelecimento salvo."));
 }
 function saveSupplier(){
@@ -329,52 +407,230 @@ function previewImport(){
   const file=$("imp_file").files[0]; if(!file)return alert("Escolha uma planilha.");
   const reader=new FileReader();
   reader.onload=e=>{
-    const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-    const rows=[]; wb.SheetNames.forEach(n=>rows.push(...XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:""})));
-    importVehicle=extractVehicle(rows);
-    importItems=parsePieces(rows);
-    renderImportPreview();
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+      const rows=[]; wb.SheetNames.forEach(n=>rows.push(...XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:""})));
+      importVehicle=extractVehicle(rows);
+      const parsed=parsePiecesSmart(rows);
+      importItems=parsed.items;
+      importPattern=parsed.pattern;
+      renderImportPreview();
+      if(!importItems.length) alert("Não encontrei peças nessa planilha. Verifique se ela tem linhas PEÇA/CÓD. ou tabela GRADE/CÓDIGO DA PEÇA.");
+    }catch(err){
+      console.error(err);
+      alert("Erro ao importar: " + err.message);
+    }
   };
   reader.readAsArrayBuffer(file);
 }
-function extractVehicle(rows){
-  const info={}; rows.forEach(r=>r.forEach((c,i)=>{const k=norm(c),v=r[i+1]; if(!v)return; if(k.includes("PLACA"))info.plate=v; if(k.includes("CHASSI"))info.chassi=v; if(k.includes("MODELO")||k.includes("VEICULO"))info.model=v; if(k==="MARCA")info.brand=v; if(k==="ANO")info.year=v; if(k==="KM")info.km=v; if(k.includes("PREFIXO"))info.prefix=v;})); return info;
+function cleanVal(v){return String(v??"").replace(/\s+/g," ").trim();}
+function extractAfterColon(text){
+  const s=String(text||"");
+  const i=s.indexOf(":");
+  return i>=0 ? s.slice(i+1).trim() : "";
 }
-function parsePieces(rows){
+function extractVehicle(rows){
+  const info={};
+  const aliases=[
+    ["brand",["MARCA"]],
+    ["model",["MODELO","VEICULO","VEÍCULO"]],
+    ["year",["ANO"]],
+    ["plate",["PLACA"]],
+    ["chassi",["CHASSI","CHASSIS"]],
+    ["km",["KM","QUILOMETRAGEM"]],
+    ["prefix",["PREFIXO"]]
+  ];
+  rows.forEach(r=>{
+    r.forEach((c,i)=>{
+      const cell=cleanVal(c); if(!cell)return;
+      const n=norm(cell);
+      aliases.forEach(([field,keys])=>{
+        if(info[field]) return;
+        for(const key of keys){
+          if(n.startsWith(key+":") || n===key){
+            const same=extractAfterColon(cell);
+            const next=cleanVal(r[i+1]);
+            info[field]=same||next||"";
+          }
+        }
+      });
+    });
+  });
+  return info;
+}
+function findMoneyCells(row){
+  return row.map((v,idx)=>({idx,val:parseMoney(v),raw:v})).filter(x=>x.val>0);
+}
+function getCodeFromPieceCell(cell){
+  const s=String(cell||"");
+  const m=s.match(/C[ÓO]D\.?\s*:?\s*([^\n\r]+)/i);
+  return (m ? m[1] : "").trim() || "sem oem";
+}
+function parsePiecesInline(rows){
   const out=[];
   rows.forEach((r,idx)=>{
-    const cells=r.map(x=>String(x??"").trim());
-    const joined=norm(cells.join(" "));
-    if(joined.includes("SERVICO")) return;
-    const first=norm(cells[0]);
-    const isPiece = first.includes("PECA") || joined.startsWith("PECA / COD") || joined.includes("PECA / COD");
-    if(!isPiece) return;
-    let code="",desc="",qty=1,unit=0,total=0,discount=0;
-    for(let i=0;i<cells.length;i++){
-      const c=cells[i];
-      if(!code && /[A-Z0-9]{5,}/i.test(c) && !norm(c).includes("PECA")) code=c;
-      if(!desc && c.length>8 && !/[R$]/.test(c) && !/^\d+[,.]?\d*$/.test(c) && !norm(c).includes("PECA")) desc=c;
+    const cells=r.map(cleanVal);
+    const pieceIdx=cells.findIndex(c=>/PE[ÇC]A/i.test(c) && /C[ÓO]D/i.test(c));
+    if(pieceIdx<0) return;
+    if(cells.some(c=>/SERVI[ÇC]O/i.test(c))) return;
+
+    const code=getCodeFromPieceCell(cells[pieceIdx]);
+    let desc="";
+    // padrão mais comum: descrição na coluna D; se não existir, primeira célula textual útil após o código
+    if(cells[3] && !/PE[ÇC]A|C[ÓO]D|SERVI[ÇC]O/i.test(cells[3])) desc=cells[3];
+    if(!desc){
+      for(let i=pieceIdx+1;i<cells.length;i++){
+        const c=cells[i];
+        if(c && c.length>3 && !/^\d+([,.]\d+)?$/.test(c) && !/PE[ÇC]A|C[ÓO]D|SERVI[ÇC]O/i.test(c)){
+          desc=c; break;
+        }
+      }
     }
-    const nums=cells.map(parseMoney).filter(n=>n>0);
-    if(nums.length){ qty = nums.find(n=>n>0 && n<1000) || 1; total = nums[nums.length-1] || 0; unit = total && qty ? total/qty : 0; }
-    if(!desc && cells[2])desc=cells[2];
-    if(!code) code="sem oem";
-    if(desc && norm(desc)!=="DESCRICAO"){
-      out.push({id:uid("item"),seq:out.length+1,line:idx+1,oem:code,desc,qty,type:classify(desc),saleUnit:unit,saleTotal:unit*qty,discount,totalPlan:total,raw:cells.join(" | ")});
+
+    // padrão de planilha militar: B código, D descrição, E qtd, F unitário, G desconto, H total
+    const qty = parseMoney(cells[4]) || 1;
+    const unit = parseMoney(cells[5]) || 0;
+    const discount = parseMoney(cells[6]) || 0;
+    const total = parseMoney(cells[7]) || (unit ? unit*qty*(discount>0 && discount<1 ? (1-discount) : 1) : 0);
+
+    if(desc){
+      out.push({
+        id:uid("item"), seq:out.length+1, line:idx+1, importPattern:"PEÇA/CÓD.",
+        oem:code, altCode:"", desc, qty, type:classify(desc),
+        saleUnit: total && qty ? total/qty : unit,
+        saleTotal: total || unit*qty, discount, totalPlan:total, unitPlan:unit,
+        raw:cells.join(" | ")
+      });
     }
   });
   return out;
 }
-function classify(desc){const d=norm(desc); if(/DISCO|PASTILHA|FREIO/.test(d))return"freio"; if(/BATERIA|FAROL|LANTERNA|SENSOR|RESISTOR/.test(d))return"eletrica"; if(/RADIADOR|ADITIVO|AGUA|VENTOINHA/.test(d))return"arrefecimento"; if(/PARACHOQUE|CAPO|PORTA|GRADE|TAMPA|ASSENTO|TAPETE/.test(d))return"lataria"; if(/MOTOR|COXIM|CORREIA|FILTRO|OLEO/.test(d))return"motor"; return"geral";}
+function headerIndex(headers, names){
+  const hs=headers.map(norm);
+  for(const name of names){
+    const n=norm(name);
+    const idx=hs.findIndex(h=>h.includes(n));
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+function parsePiecesGrade(rows){
+  const out=[];
+  for(let h=0; h<rows.length; h++){
+    const header=rows[h].map(cleanVal);
+    const joined=norm(header.join(" "));
+    if(!(joined.includes("GRADE") && (joined.includes("CODIGO DA PECA") || joined.includes("CÓDIGO DA PEÇA")))) continue;
+
+    const idxCode1=headerIndex(header,["CÓDIGO DA PEÇA","CODIGO DA PECA","CÓDIGO ORIGINAL","CODIGO ORIGINAL"]);
+    let idxCode2=idxCode1>=0 ? idxCode1+1 : 2;
+    const idxDesc=headerIndex(header,["DESCRIÇÃO","DESCRICAO"]);
+    const idxQty=headerIndex(header,["QTD","QUANTIDADE"]);
+    const idxUnit=headerIndex(header,["UNIT","UNITÁRIO","UNITARIO","REGISTRADO"]);
+    const idxDisc=headerIndex(header,["DESC"]);
+    const idxTotal=headerIndex(header,["VALOR","TOTAL"]);
+
+    for(let r=h+1; r<rows.length; r++){
+      const row=rows[r].map(cleanVal);
+      const rowText=norm(row.join(" "));
+      if(!rowText) continue;
+      if(rowText.includes("TOTAL") || rowText.includes("RESUMO") || rowText.includes("SERVICO") || rowText.includes("SERVIÇO")) {
+        if(out.length) break;
+        continue;
+      }
+
+      const code = cleanVal(row[idxCode1] || row[1] || "sem oem") || "sem oem";
+      const altCode = cleanVal(row[idxCode2] || "");
+      const desc = cleanVal(row[idxDesc] || row[3] || "");
+      const qty = parseMoney(row[idxQty]) || parseMoney(row[4]) || 1;
+      const unit = parseMoney(row[idxUnit]) || parseMoney(row[5]) || 0;
+      const discount = parseMoney(row[idxDisc]) || parseMoney(row[6]) || 0;
+      const total = parseMoney(row[idxTotal]) || parseMoney(row[7]) || (unit ? unit*qty*(discount>0 && discount<1 ? (1-discount) : 1) : 0);
+
+      if(desc && !norm(desc).includes("DESCRICAO")){
+        out.push({
+          id:uid("item"), seq:out.length+1, line:r+1, importPattern:"GRADE",
+          oem:code, altCode, desc, qty, type:classify(desc),
+          saleUnit: total && qty ? total/qty : unit,
+          saleTotal: total || unit*qty, discount, totalPlan:total, unitPlan:unit,
+          raw:row.join(" | ")
+        });
+      }
+    }
+  }
+  return out;
+}
+function parsePiecesGenericTable(rows){
+  const out=[];
+  const headerRowIndex = rows.findIndex(r=>{
+    const j=norm((r||[]).join(" "));
+    return j.includes("COD") && j.includes("DESCR") && (j.includes("QTD") || j.includes("QUANT"));
+  });
+  if(headerRowIndex<0) return out;
+  const header=rows[headerRowIndex].map(cleanVal);
+  const idxCode=headerIndex(header,["CODIGO","CÓDIGO","COD","REFERENCIA","REF"]);
+  const idxDesc=headerIndex(header,["DESCRIÇÃO","DESCRICAO","PEÇA","PECA","PRODUTO"]);
+  const idxQty=headerIndex(header,["QTD","QTDE","QUANTIDADE"]);
+  const idxUnit=headerIndex(header,["UNIT","PREÇO UNIT","PRECO UNIT","VALOR UNIT"]);
+  const idxTotal=headerIndex(header,["TOTAL","VALOR"]);
+  for(let r=headerRowIndex+1;r<rows.length;r++){
+    const row=rows[r].map(cleanVal); const txt=norm(row.join(" "));
+    if(!txt) continue;
+    if(txt.includes("SERVICO") || txt.includes("SERVIÇO")) continue;
+    if(txt.includes("TOTAL") && out.length) break;
+    const desc=cleanVal(row[idxDesc]||"");
+    if(!desc) continue;
+    const code=cleanVal(row[idxCode]||"sem oem");
+    const qty=parseMoney(row[idxQty])||1;
+    const unit=parseMoney(row[idxUnit])||0;
+    const total=parseMoney(row[idxTotal])||unit*qty;
+    out.push({id:uid("item"),seq:out.length+1,line:r+1,importPattern:"TABELA",oem:code,altCode:"",desc,qty,type:classify(desc),saleUnit: total&&qty?total/qty:unit,saleTotal:total,discount:0,totalPlan:total,unitPlan:unit,raw:row.join(" | ")});
+  }
+  return out;
+}
+function dedupeItems(items){
+  const seen=new Set();
+  return items.filter(i=>{
+    const key=norm([i.oem,i.desc,i.qty,i.saleTotal].join("|"));
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  }).map((i,idx)=>({...i,seq:idx+1}));
+}
+function parsePiecesSmart(rows){
+  const inline=parsePiecesInline(rows);
+  const grade=parsePiecesGrade(rows);
+  const generic=parsePiecesGenericTable(rows);
+  let items=[], pattern="";
+  if(inline.length>=grade.length && inline.length>0){items=inline; pattern="PEÇA/CÓD.";}
+  else if(grade.length>0){items=grade; pattern="GRADE";}
+  else {items=generic; pattern=generic.length?"TABELA GENÉRICA":"NÃO IDENTIFICADO";}
+  return {items:dedupeItems(items), pattern};
+}
+function classify(desc){const d=norm(desc);
+  if(/DISCO|PASTILHA|FREIO|SAPATA|CILINDRO|ABS/.test(d))return"freio";
+  if(/BATERIA|FAROL|LANTERNA|SENSOR|RESISTOR|MODULO|MÓDULO|RELE|RELÉ|CHICOTE|LAMPADA|LÂMPADA/.test(d))return"eletrica";
+  if(/RADIADOR|ADITIVO|AGUA|ÁGUA|VENTOINHA|BOMBA D|MANGUEIRA|ARREFEC/.test(d))return"arrefecimento";
+  if(/PARACHOQUE|PARA-CHOQUE|CAPO|CAPÔ|PORTA|GRADE|TAMPA|ASSENTO|TAPETE|RETROVISOR|PARALAMA/.test(d))return"lataria";
+  if(/MOTOR|COXIM|CORREIA|FILTRO|OLEO|ÓLEO|VELA|INJETOR|BICO|COLETOR|RETENTOR|ESCAPE/.test(d))return"motor";
+  if(/AMORTECEDOR|BANDEJA|BRAÇO|BRACO|BUCHA|PIVO|PIVÔ|BIELETA|MOLA|TERMINAL|BARRA/.test(d))return"suspensao";
+  return"geral";
+}
 function renderImportPreview(){
-  const total=importItems.reduce((s,i)=>s+(i.saleUnit||0)*(i.qty||1),0);
-  $("importPreview").innerHTML=`<div class='success'><b>${importItems.length}</b> peças encontradas. Valor base de venda: <b>${money(total)}</b></div>
-  <details open><summary>Ver peças</summary><div class='tablewrap'><table><thead><tr><th>#</th><th>Cód.</th><th>Descrição</th><th>Qtd</th><th>Venda base</th><th>Tipo</th></tr></thead><tbody>${importItems.map(i=>`<tr><td>${i.seq}</td><td>${esc(i.oem)}</td><td>${esc(i.desc)}</td><td>${i.qty}</td><td>${money((i.saleUnit||0)*(i.qty||1))}</td><td>${esc(i.type)}</td></tr>`).join("")}</tbody></table></div></details>`;
+  const total=importItems.reduce((s,i)=>s+(Number(i.saleTotal)||((Number(i.saleUnit)||0)*(Number(i.qty)||1))),0);
+  if(!importItems.length){
+    $("importPreview").innerHTML=`<div class='alert'><b>Nenhuma peça encontrada.</b><br>O importador agora entende dois padrões principais: linhas PEÇA/CÓD. e tabela GRADE/CÓDIGO DA PEÇA. Se esta planilha tiver outro modelo, envie a planilha para criarmos mais um leitor específico.</div>`;
+    return;
+  }
+  $("importPreview").innerHTML=`<div class='success'>
+    <b>${importItems.length}</b> peças encontradas. 
+    Padrão detectado: <b>${esc(importPattern)}</b>. 
+    Valor base de venda: <b>${money(total)}</b>.
+  </div>
+  <details open><summary>Ver peças importadas</summary><div class='tablewrap'><table><thead><tr><th>#</th><th>Linha</th><th>Cód. original</th><th>Cód. alternativo</th><th>Descrição</th><th>Qtd</th><th>Unit. planilha</th><th>Total planilha</th><th>Tipo</th></tr></thead><tbody>${importItems.map(i=>`<tr><td>${i.seq}</td><td>${i.line}</td><td>${esc(i.oem)}</td><td>${esc(i.altCode||"-")}</td><td>${esc(i.desc)}</td><td>${i.qty}</td><td>${money(i.unitPlan||i.saleUnit||0)}</td><td>${money(i.saleTotal||0)}</td><td>${esc(i.type)}</td></tr>`).join("")}</tbody></table></div></details>`;
 }
 function createQuoteFromImport(){
   if(!importItems.length)return alert("Importe a planilha primeiro.");
   const qid=uid("quote"); const number=$("imp_number").value.trim()||("OS-"+Date.now());
-  const quote={id:qid,number,status:"open",kind:"normal",vehicle:importVehicle,items:importItems,responses:{},createdAt:Date.now(),signature:ASSINATURA};
+  const quote={id:qid,number,status:"open",kind:"normal",vehicle:importVehicle,items:importItems,importPattern,responses:{},createdAt:Date.now(),signature:ASSINATURA};
   db.ref("quotes/"+qid).set(quote).then(()=>{alert("Cotação online criada.");showTab("cotacoes");});
 }
 function supplierMatchesItem(s,item){
