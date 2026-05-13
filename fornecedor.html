@@ -4,40 +4,92 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Responder Cotação — valor_IA</title>
-  <script src="firebase-config.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
   <style>
-    :root{--bg:#08111f;--card:#101827;--line:#243145;--text:#f8fafc;--muted:#9aa9bd;--ok:#22c55e;--bad:#ef4444;--blue:#38bdf8}
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#020617,#102044);color:var(--text);font-family:Arial,Helvetica,sans-serif} header{padding:16px;background:#020617;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}.wrap{max-width:1050px;margin:auto;padding:14px}.card{background:rgba(15,23,42,.95);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0} h1{font-size:22px;margin:0} h2{font-size:17px;margin:0 0 8px}.muted{color:var(--muted)} label{display:block;font-size:12px;color:var(--muted);margin:7px 0 4px} input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#020617;color:var(--text)} button{border:0;border-radius:10px;background:var(--ok);color:#052e16;font-weight:700;padding:10px 13px;margin:4px 4px 4px 0} button.blue{background:var(--blue);color:#062436} button.bad{background:var(--bad);color:white}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}.piece{border-left:4px solid #475569}.saved{border-left-color:var(--ok)}.nohave{border-left-color:var(--bad)}.pill{display:inline-block;padding:3px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;margin:2px}.bar{height:12px;background:#020617;border:1px solid var(--line);border-radius:999px;overflow:hidden}.bar>div{height:100%;background:var(--ok);width:0}.stickySave{position:sticky;bottom:0;background:rgba(2,6,23,.94);border-top:1px solid var(--line);padding:10px;margin-top:10px}.ok{color:#86efac}.badText{color:#fca5a5}
+    :root{--bg:#070b18;--panel:#0f172a;--line:#26344f;--text:#f8fafc;--muted:#a8b3c7;--green:#22c55e;--blue:#38bdf8;--red:#ef4444;--yellow:#fde047}
+    *{box-sizing:border-box}body{margin:0;background:linear-gradient(140deg,#040816,#0b1b3b);color:var(--text);font-family:Arial,Helvetica,sans-serif}header{padding:18px;border-bottom:1px solid var(--line);background:#020817;position:sticky;top:0;z-index:5}h1{margin:0;font-size:22px}p{color:var(--muted)}.wrap{max-width:1100px;margin:0 auto;padding:16px}.card{background:rgba(15,23,42,.95);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 12px 35px rgba(0,0,0,.25)}label{display:block;margin:9px 0 5px;color:#cbd5e1;font-size:13px}input,textarea,select{width:100%;border:1px solid var(--line);background:#060b18;color:var(--text);border-radius:11px;padding:10px}textarea{min-height:70px}button{border:0;border-radius:11px;padding:10px 13px;margin:4px 4px 4px 0;font-weight:700;cursor:pointer;background:var(--green);color:#052e16}.blue{background:var(--blue);color:#082f49}.red{background:var(--red);color:#fff}.gray{background:#475569;color:#fff}.muted{color:var(--muted)}.ok{color:#86efac}.warn{color:#fde68a}.bad{color:#fca5a5}.pill{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;margin:2px;font-size:12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.item{border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;background:#060b18}.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.progress{height:14px;background:#020817;border:1px solid var(--line);border-radius:999px;overflow:hidden}.bar{height:100%;background:var(--green);width:0}.stickyActions{position:sticky;bottom:0;background:rgba(2,6,23,.95);border-top:1px solid var(--line);padding:12px;display:flex;gap:8px;flex-wrap:wrap}.hide{display:none!important}.mono{font-family:Consolas,monospace}.footer{text-align:center;color:#8fa3c5;padding:22px}@media(max-width:700px){h1{font-size:19px}.wrap{padding:10px}}
   </style>
 </head>
 <body>
-<header><h1>Responder cotação</h1><div id="topInfo" class="muted">Carregando...</div></header>
+<header><h1>Responder Cotação</h1><p id="subtitle">Carregando...</p></header>
 <div class="wrap">
-  <section class="card"><h2>Progresso</h2><div class="bar"><div id="barFill"></div></div><p id="progressText" class="muted"></p><input id="busca" placeholder="Buscar peça por código ou descrição" oninput="render()"></section>
-  <section id="list"></section>
-  <div class="stickySave"><button onclick="salvarTudo()">Salvar tudo agora</button><span id="saveMsg" class="muted"></span></div>
+  <div id="errorBox" class="card hide" style="border-color:#ef4444"><h2>Não consegui abrir a cotação</h2><p id="errorText" class="bad"></p></div>
+  <section id="mainBox" class="hide">
+    <div class="card">
+      <h2 id="quoteTitle"></h2>
+      <p id="vehicleInfo"></p>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <p id="progressText" class="muted"></p>
+      <p class="muted">Você pode salvar parcial. Preencha apenas o que tiver. Para peça indisponível, marque <b>Não tenho</b>.</p>
+    </div>
+    <div id="itemsBox"></div>
+    <div class="stickyActions">
+      <button onclick="saveAll()">Salvar tudo no sistema</button>
+      <button class="blue" onclick="scrollToFirstEmpty()">Ir para primeira pendente</button>
+    </div>
+  </section>
 </div>
-<script>
-let app, db, params, linkData, respostas={};
-function getParams(){ return Object.fromEntries(new URLSearchParams(location.search).entries()); }
-function b64ToCfg(b64){ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
-function getCfg(){ const p=getParams(); if(p.cfg) return b64ToCfg(p.cfg); return window.firebaseConfig; }
-function isBadCfg(c){ return !c||!c.apiKey||String(c.apiKey).includes('COLE_AQUI'); }
-function moeda(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-function num(v){ let s=String(v||'').replace(/[^\d,.-]/g,''); if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.'); else if(s.includes(','))s=s.replace(',','.'); const n=Number(s); return Number.isFinite(n)?n:0; }
-function localKey(){return 'valorIA_resp_'+params.c+'_'+params.f+'_'+params.t}
-function init(){ params=getParams(); const cfg=getCfg(); if(isBadCfg(cfg)){topInfo.innerHTML='<span class="badText">Configuração Firebase ausente.</span>';return;} firebase.initializeApp(cfg); db=firebase.database(); carregar(); }
-function carregar(){ db.ref(`linksFornecedor/${params.c}/${params.f}/${params.t}`).once('value').then(snap=>{ linkData=snap.val(); if(!linkData){topInfo.innerHTML='<span class="badText">Link inválido ou expirado.</span>';return;} topInfo.textContent=`Cotação #${linkData.cotacaoId} — ${linkData.veiculo?.modelo||''} ${linkData.veiculo?.placa||''} — ${linkData.fornecedorNome}`; try{respostas=JSON.parse(localStorage.getItem(localKey())||'{}')}catch(e){respostas={}} db.ref(`respostas/${params.c}/${params.f}/${params.t}/itens`).on('value',s=>{ respostas={...respostas,...(s.val()||{})}; render(); }); render(); }); }
-function getVal(itemId,field){ return respostas[itemId]?.[field]||''; }
-function setVal(itemId,field,val){ if(!respostas[itemId])respostas[itemId]={}; respostas[itemId][field]=val; respostas[itemId].itemId=itemId; respostas[itemId].fornecedorId=params.f; respostas[itemId].fornecedorNome=linkData.fornecedorNome; respostas[itemId].updatedAt=new Date().toISOString(); localStorage.setItem(localKey(),JSON.stringify(respostas)); updateProgress(); }
-function render(){ if(!linkData)return; const q=(busca.value||'').toUpperCase(); const itens=(linkData.itens||[]).filter(i=>!q||String(i.codigoOriginal+' '+i.descricaoOriginal).toUpperCase().includes(q)); list.innerHTML=itens.map(i=>{ const r=respostas[i.id]||{}; const cls=r.temDisponivel===false?'nohave':(r.precoUnitario?'saved':'piece'); return `<div class="card ${cls}"><h2>${i.n}. ${i.descricaoOriginal}</h2><div class="muted">Código original: <b>${i.codigoOriginal}</b> | Qtd: <b>${i.quantidade}</b> | Tipo: <span class="pill">${i.tipo}</span></div><div class="grid"><div><label>Tem?</label><select onchange="setVal('${i.id}','temDisponivel',this.value==='sim')"><option value="sim" ${r.temDisponivel!==false?'selected':''}>Tenho / cotar</option><option value="nao" ${r.temDisponivel===false?'selected':''}>Não tenho</option></select></div><div><label>Marca</label><input value="${r.marca||''}" oninput="setVal('${i.id}','marca',this.value)"></div><div><label>Cód. marca (opcional)</label><input value="${r.codigoMarca||''}" oninput="setVal('${i.id}','codigoMarca',this.value)"></div><div><label>Preço unitário</label><input inputmode="decimal" value="${r.precoUnitario||''}" oninput="setVal('${i.id}','precoUnitario',this.value)"></div><div><label>Disponibilidade</label><input value="${r.disponibilidade||''}" placeholder="hoje, amanhã, 3 dias" oninput="setVal('${i.id}','disponibilidade',this.value)"></div></div><label>Descrição do vendedor</label><input value="${r.descricaoFornecedor||''}" placeholder="descrição comercial da peça" oninput="setVal('${i.id}','descricaoFornecedor',this.value)"><label>Observação</label><textarea oninput="setVal('${i.id}','observacao',this.value)">${r.observacao||''}</textarea><button onclick="salvarItem('${i.id}')">Salvar esta peça</button></div>`; }).join(''); updateProgress(); }
-function normalizeItem(itemId){ const i=linkData.itens.find(x=>x.id===itemId); const r=respostas[itemId]||{}; return {...r,itemId,codigoOriginal:i.codigoOriginal,descricaoOriginal:i.descricaoOriginal,quantidade:i.quantidade,precoUnitario:num(r.precoUnitario),temDisponivel:r.temDisponivel!==false,updatedAt:new Date().toISOString()}; }
-function salvarItem(itemId){ const payload=normalizeItem(itemId); return db.ref(`respostas/${params.c}/${params.f}/${params.t}/itens/${itemId}`).set(payload).then(()=>{ db.ref(`respostas/${params.c}/${params.f}/${params.t}/meta`).set({cotacaoId:params.c,fornecedorId:params.f,fornecedorNome:linkData.fornecedorNome,updatedAt:new Date().toISOString()}); saveMsg.innerHTML='<span class="ok">Salvo.</span>'; setTimeout(()=>saveMsg.textContent='',1800); }); }
-function salvarTudo(){ const ids=Object.keys(respostas); Promise.all(ids.map(salvarItem)).then(()=>{ saveMsg.innerHTML='<span class="ok">Tudo salvo.</span>'; }); }
-function updateProgress(){ if(!linkData)return; const total=linkData.itens.length; let done=0; linkData.itens.forEach(i=>{ const r=respostas[i.id]||{}; if(r.temDisponivel===false || r.precoUnitario || r.marca || r.disponibilidade) done++; }); const pct=total?Math.round(done/total*100):0; barFill.style.width=pct+'%'; progressText.textContent=`${done}/${total} peças com alguma resposta (${pct}%).`; }
-init();
+<div class="footer">Powered by thIAguinho Soluções Digitais</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const app=initializeApp(firebaseConfig); const db=getDatabase(app);
+const params=new URLSearchParams(location.search);
+const cotacaoId=params.get('cotacao'); const fornecedorId=params.get('fornecedor'); const token=params.get('token')||'';
+let quote=null, supplier=null, pieces=[], saved={};
+
+function norm(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();}
+function moneyToNumber(v){let s=String(v||'').replace(/[^\d,.-]/g,''); if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.'); else if(s.includes(','))s=s.replace(',','.'); const n=Number(s); return Number.isFinite(n)?n:0;}
+function showErr(msg){document.getElementById('errorBox').classList.remove('hide');document.getElementById('errorText').textContent=msg;document.getElementById('mainBox').classList.add('hide');}
+function typeCovers(s,p){const types=(s.tipos||[]).map(norm); if(!types.length)return true; if(types.some(t=>t.includes('todas')||t.includes('todos')||t==='geral'||t==='tudo')) return true; return types.includes(norm(p.tipo));}
+function inputId(pid,field){return `${pid}_${field}`;}
+function val(pid,field){return document.getElementById(inputId(pid,field))?.value || '';}
+function setVal(pid,field,v){const el=document.getElementById(inputId(pid,field)); if(el) el.value=v??'';}
+function loadDraft(pid){try{return JSON.parse(localStorage.getItem(`draft_${cotacaoId}_${fornecedorId}_${pid}`)||'{}')}catch(e){return {}}}
+function saveDraft(pid){const d=collect(pid,false); localStorage.setItem(`draft_${cotacaoId}_${fornecedorId}_${pid}`, JSON.stringify(d)); updateProgress();}
+function collect(pid,withMeta=true){const tem=val(pid,'tem'); const price=moneyToNumber(val(pid,'preco')); const payload={
+  temDisponivel: tem==='sim' ? true : tem==='nao' ? false : null,
+  marca: val(pid,'marca').trim(), codigoMarca: val(pid,'codigoMarca').trim(), descricaoFornecedor: val(pid,'descricaoFornecedor').trim(),
+  precoUnitario: price, disponibilidade: val(pid,'disponibilidade').trim(), observacao: val(pid,'observacao').trim()
+};
+if(withMeta){payload.fornecedorId=fornecedorId; payload.fornecedorNome=supplier?.nome||fornecedorId; payload.token=token; payload.atualizadoEm=new Date().toISOString();}
+return payload;}
+function isAnswered(d){return d && (d.temDisponivel===false || d.marca || d.codigoMarca || d.descricaoFornecedor || Number(d.precoUnitario)>0 || d.disponibilidade);}
+async function init(){
+  if(!cotacaoId || !fornecedorId || !token){showErr('Link incompleto. Peça novo link para a oficina.');return;}
+  const qSnap=await get(ref(db,`publicCotacoes/${cotacaoId}`));
+  if(!qSnap.exists()){showErr('Cotação não encontrada.');return;}
+  quote=qSnap.val(); supplier=quote.fornecedores?.[fornecedorId];
+  if(!supplier){showErr('Fornecedor não vinculado nesta cotação. Peça novo link.');return;}
+  const fullSnap=await get(ref(db,`cotacoes/${cotacaoId}/fornecedores/${fornecedorId}/token`));
+  const expected=fullSnap.val();
+  if(expected && expected!==token){showErr('Token inválido. Peça novo link para a oficina.');return;}
+  pieces=Object.values(quote.pecas||{}).sort((a,b)=>(a.ordem||0)-(b.ordem||0)).filter(p=>typeCovers(supplier,p));
+  if(!pieces.length){showErr('Nenhuma peça liberada para este fornecedor.');return;}
+  render();
+  onValue(ref(db,`respostas/${cotacaoId}/${fornecedorId}`), snap=>{saved=snap.val()||{}; hydrateSaved(); updateProgress();});
+}
+function render(){
+  document.getElementById('mainBox').classList.remove('hide');
+  document.getElementById('subtitle').textContent=`Fornecedor: ${supplier.nome}`;
+  document.getElementById('quoteTitle').textContent=`Cotação #${quote.numero} — ${pieces.length} peça(s)`;
+  document.getElementById('vehicleInfo').innerHTML=`<b>Veículo:</b> ${quote.veiculo?.marca||''} ${quote.veiculo?.modelo||''} | <b>Placa:</b> ${quote.veiculo?.placa||'-'} | <b>Chassi:</b> ${quote.veiculo?.chassi||'-'}`;
+  document.getElementById('itemsBox').innerHTML=pieces.map(p=>itemHtml(p)).join('');
+  pieces.forEach(p=>{
+    const d=loadDraft(p.id); Object.entries(d).forEach(([k,v])=>{ if(k!=='precoUnitario') setVal(p.id,k,v); }); if(d.precoUnitario) setVal(p.id,'preco',String(d.precoUnitario).replace('.',','));
+  });
+  hydrateSaved(); updateProgress();
+}
+function itemHtml(p){return `<div class="item" id="item_${p.id}"><div class="top"><div><b>${p.ordem}. ${p.descricaoOriginal}</b><br><span class="mono">Código original: ${p.codigoOriginal}</span> | Qtd: ${p.quantidade} | <span class="pill">${p.tipo}</span></div><span id="status_${p.id}" class="pill">pendente</span></div><div class="grid"><div><label>Disponibilidade da peça</label><select id="${inputId(p.id,'tem')}" onchange="saveDraft('${p.id}')"><option value="">Selecione</option><option value="sim">Tenho / consigo fornecer</option><option value="nao">Não tenho</option></select></div><div><label>Marca</label><input id="${inputId(p.id,'marca')}" oninput="saveDraft('${p.id}')" placeholder="Ex: COFAP, ORIGINAL, FRAS-LE" /></div><div><label>Código da marca / referência</label><input id="${inputId(p.id,'codigoMarca')}" oninput="saveDraft('${p.id}')" placeholder="Opcional" /></div><div><label>Preço unitário</label><input id="${inputId(p.id,'preco')}" oninput="saveDraft('${p.id}')" placeholder="Ex: 100,00" /></div><div><label>Disponibilidade / prazo</label><input id="${inputId(p.id,'disponibilidade')}" oninput="saveDraft('${p.id}')" placeholder="Ex: hoje, amanhã, 3 dias" /></div></div><label>Descrição do vendedor</label><input id="${inputId(p.id,'descricaoFornecedor')}" oninput="saveDraft('${p.id}')" placeholder="Descrição exata da peça ofertada" /><label>Observação</label><textarea id="${inputId(p.id,'observacao')}" oninput="saveDraft('${p.id}')" placeholder="Opcional"></textarea><button onclick="saveOne('${p.id}')">Salvar este item</button><button class="red" onclick="markNo('${p.id}')">Marcar não tenho</button></div>`;}
+function hydrateSaved(){pieces.forEach(p=>{const d=saved[p.id]; if(!d) return; setVal(p.id,'tem', d.temDisponivel===false?'nao':d.temDisponivel===true?'sim':''); setVal(p.id,'marca',d.marca); setVal(p.id,'codigoMarca',d.codigoMarca); setVal(p.id,'descricaoFornecedor',d.descricaoFornecedor); setVal(p.id,'preco',d.precoUnitario?String(d.precoUnitario).replace('.',','):''); setVal(p.id,'disponibilidade',d.disponibilidade); setVal(p.id,'observacao',d.observacao); const st=document.getElementById(`status_${p.id}`); if(st){st.textContent='salvo'; st.className='pill ok';}});}
+async function saveOne(pid){const d=collect(pid,true); if(!isAnswered(d)){alert('Preencha algo ou marque Não tenho.');return;} await set(ref(db,`respostas/${cotacaoId}/${fornecedorId}/${pid}`),d); localStorage.removeItem(`draft_${cotacaoId}_${fornecedorId}_${pid}`); const st=document.getElementById(`status_${pid}`); if(st){st.textContent='salvo';st.className='pill ok';}}
+async function saveAll(){let count=0; for(const p of pieces){const d=collect(p.id,true); if(isAnswered(d)){await set(ref(db,`respostas/${cotacaoId}/${fornecedorId}/${p.id}`),d); localStorage.removeItem(`draft_${cotacaoId}_${fornecedorId}_${p.id}`); count++;}} alert(`${count} item(ns) salvo(s).`);}
+function markNo(pid){setVal(pid,'tem','nao'); setVal(pid,'marca',''); setVal(pid,'codigoMarca',''); setVal(pid,'preco',''); saveOne(pid);}
+function updateProgress(){let done=0; pieces.forEach(p=>{const d=saved[p.id]||collect(p.id,false); if(isAnswered(d))done++;}); const pct=pieces.length?Math.round(done*100/pieces.length):0; document.getElementById('bar').style.width=pct+'%'; document.getElementById('progressText').textContent=`${done}/${pieces.length} item(ns) respondidos — ${pct}%`;}
+function scrollToFirstEmpty(){for(const p of pieces){const d=saved[p.id]||collect(p.id,false); if(!isAnswered(d)){document.getElementById(`item_${p.id}`)?.scrollIntoView({behavior:'smooth',block:'start'}); return;}} alert('Tudo respondido.');}
+window.saveOne=saveOne;window.saveAll=saveAll;window.markNo=markNo;window.saveDraft=saveDraft;window.scrollToFirstEmpty=scrollToFirstEmpty;
+init().catch(e=>showErr(e.message));
 </script>
 </body>
 </html>

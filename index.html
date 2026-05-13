@@ -3,186 +3,343 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>valor_IA — Sistema de Cotação</title>
-  <script src="firebase-config.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <title>valor_IA — Sistema de Cotação por Link</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    :root{--bg:#08111f;--card:#101827;--card2:#0b1220;--line:#243145;--text:#f8fafc;--muted:#9aa9bd;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--blue:#38bdf8;--violet:#a78bfa}
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#020617,#102044 60%,#111827);color:var(--text);font-family:Arial,Helvetica,sans-serif} header{padding:16px 18px;background:rgba(2,6,23,.9);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10} h1{margin:0;font-size:22px}.sub{color:var(--muted);font-size:13px;margin-top:4px}.wrap{max-width:1300px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.card{background:rgba(15,23,42,.94);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 14px 40px rgba(0,0,0,.25)} h2{font-size:18px;margin:0 0 12px} h3{font-size:16px;margin:12px 0 8px} label{display:block;color:var(--muted);font-size:13px;margin:9px 0 5px} input,select,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:#020617;color:var(--text)} textarea{min-height:88px} button{border:0;border-radius:12px;background:var(--ok);color:#052e16;font-weight:700;padding:10px 13px;margin:4px 4px 4px 0;cursor:pointer} button.blue{background:var(--blue);color:#062436} button.gray{background:#475569;color:white} button.bad{background:var(--bad);color:white} button.warn{background:var(--warn);color:#3b2500}.hidden{display:none!important}.muted{color:var(--muted)}.ok{color:#86efac}.warnText{color:#fde68a}.badText{color:#fca5a5}.pill{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;margin:2px;color:#dbeafe;font-size:12px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tableWrap{overflow:auto;border-radius:14px;border:1px solid var(--line);margin-top:10px} table{width:100%;border-collapse:collapse;min-width:920px} th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top;font-size:13px} th{background:#020617;color:#cbd5e1;position:sticky;top:0}.quote{background:#020617;border:1px solid var(--line);padding:10px;border-radius:12px;white-space:pre-wrap;font-size:13px}.copy{font-family:Consolas,monospace;font-size:12px}.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.stat div{background:#020617;border:1px solid var(--line);border-radius:12px;padding:10px}.stat b{font-size:18px}.cotacaoBox{border:1px solid var(--line);border-radius:16px;background:#020617;padding:12px;margin:10px 0}.best{border-left:4px solid var(--ok)} footer{text-align:center;color:var(--muted);padding:24px}.logo{font-weight:800;letter-spacing:.3px}
+    :root{
+      --bg:#070b18;--panel:#0f172a;--panel2:#111c34;--line:#26344f;--text:#f8fafc;--muted:#a8b3c7;
+      --green:#22c55e;--blue:#38bdf8;--red:#ef4444;--yellow:#fde047;--orange:#fb923c;--white:#fff;
+    }
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(140deg,#040816,#0b1b3b 65%,#071426);color:var(--text);font-family:Arial,Helvetica,sans-serif;}
+    header{padding:18px 18px 14px;border-bottom:1px solid var(--line);background:rgba(2,6,23,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(8px)}
+    header h1{margin:0;font-size:24px;letter-spacing:.2px} header p{margin:6px 0 0;color:var(--muted)}
+    .wrap{max-width:1320px;margin:0 auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.card{background:rgba(15,23,42,.94);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 15px 40px rgba(0,0,0,.28)}
+    h2{font-size:18px;margin:0 0 12px} h3{margin:6px 0 10px}.muted{color:var(--muted)} small{color:var(--muted)}
+    label{display:block;margin:10px 0 5px;color:#cbd5e1;font-size:13px} input,select,textarea{width:100%;border:1px solid var(--line);background:#060b18;color:var(--text);border-radius:11px;padding:10px;outline:none} textarea{min-height:88px;resize:vertical}
+    button{border:0;border-radius:11px;padding:10px 13px;margin:4px 4px 4px 0;font-weight:700;cursor:pointer;background:var(--green);color:#052e16} button.blue{background:var(--blue);color:#082f49} button.gray{background:#475569;color:#fff} button.red{background:var(--red);color:#fff} button.orange{background:var(--orange);color:#431407} button:disabled{opacity:.55;cursor:not-allowed}
+    table{width:100%;border-collapse:collapse;margin-top:10px;border-radius:13px;overflow:hidden;background:#061022} th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px} th{background:#020817;color:#dbeafe} tr:hover td{background:rgba(56,189,248,.05)}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;margin:2px;color:#e2e8f0}.ok{color:#86efac}.warn{color:#fde68a}.bad{color:#fca5a5}.hide{display:none!important}
+    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}.kpi{background:#061022;border:1px solid var(--line);border-radius:14px;padding:12px}.kpi b{display:block;font-size:21px;margin-bottom:3px}.list{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:10px;background:#061022}.quote{border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;background:#060b18}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.copybox{font-family:Consolas,monospace;font-size:12px;background:#020817;border:1px solid var(--line);border-radius:12px;padding:10px;white-space:pre-wrap;word-break:break-word}.footer{padding:22px;text-align:center;color:#8fa3c5}.statusbar{position:fixed;right:14px;bottom:14px;background:#020817;border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 15px 40px rgba(0,0,0,.35);z-index:10;max-width:360px}.mono{font-family:Consolas,monospace}.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:800px){.split{grid-template-columns:1fr} header h1{font-size:20px}}
   </style>
 </head>
 <body>
-<header>
-  <h1><span class="logo">valor_IA</span> — Sistema de Cotação por Link</h1>
-  <div class="sub">WhatsApp envia só o convite. Vendedor responde no formulário. Painel atualiza em tempo real.</div>
-</header>
-<div class="wrap">
-  <section id="configCard" class="card hidden">
-    <h2>1. Configurar Firebase</h2>
-    <p class="muted">Cole a configuração do app Web do Firebase. A configuração Web não é senha; quem protege os dados são as regras do Realtime Database.</p>
-    <textarea id="firebaseConfigText" placeholder='Cole aqui o objeto firebaseConfig, exemplo: { "apiKey": "...", "authDomain": "...", "databaseURL": "..." }'></textarea>
-    <button onclick="saveFirebaseConfigFromText()">Salvar configuração neste navegador</button>
-    <button class="gray" onclick="clearLocalConfig()">Limpar configuração local</button>
-  </section>
+  <header>
+    <h1>valor_IA — Sistema de Cotação por Link</h1>
+    <p>WhatsApp envia só o convite. Vendedor responde no formulário. Painel atualiza em tempo real.</p>
+  </header>
+  <div class="wrap">
+    <div id="firebaseError" class="card hide" style="border-color:#ef4444"><h2>Erro de Firebase</h2><p id="firebaseErrorText" class="bad"></p></div>
 
-  <section id="loginCard" class="card hidden">
-    <h2>2. Entrar como administrador</h2>
-    <div class="grid">
-      <div><label>E-mail</label><input id="email" type="email" placeholder="admin@email.com"></div>
-      <div><label>Senha</label><input id="senha" type="password" placeholder="Senha criada no Firebase Auth"></div>
-    </div>
-    <button onclick="login()">Entrar</button>
-    <p id="loginMsg" class="muted"></p>
-  </section>
-
-  <main id="app" class="hidden">
     <div class="grid">
       <section class="card">
-        <h2>Importar planilha da OS</h2>
-        <label>Número/Prefixo da cotação</label><input id="numeroCotacao" placeholder="Ex: I52203 ou 52203">
-        <label>Planilha XLSX</label><input id="fileXlsx" type="file" accept=".xlsx,.xls,.csv">
-        <button onclick="importarPlanilha()">Importar somente peças</button>
-        <button class="gray" onclick="logout()">Sair</button>
-        <p class="muted">Este importador aceita somente linhas iniciadas por <b>PEÇA / CÓD.</b>. Serviços são ignorados.</p>
-        <div id="importResumo"></div>
+        <h2>1. Importar planilha de OS</h2>
+        <label>Número da cotação/OS</label>
+        <input id="quoteNumber" placeholder="Ex: I52203" />
+        <label>Planilha XLSX</label>
+        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+        <div class="toolbar">
+          <button onclick="parseSpreadsheet()">Importar somente peças</button>
+          <button class="gray" onclick="clearPreview()">Limpar prévia</button>
+        </div>
+        <p class="muted">O importador considera somente linhas que começam com <b>PEÇA / CÓD.</b> e ignora <b>SERVIÇO</b>.</p>
       </section>
 
       <section class="card">
-        <h2>Fornecedor</h2>
-        <label>Nome</label><input id="fornNome" placeholder="Ex: FURLAN AUTO PEÇAS">
-        <label>WhatsApp</label><input id="fornWhats" placeholder="Ex: 17997631210 ou 5517997631210">
-        <label>Tipos atendidos</label><input id="fornTipos" value="todas as peças" placeholder="todas as peças, freio, suspensão, elétrica...">
-        <button onclick="salvarFornecedor()">Salvar fornecedor</button>
-        <div id="fornecedoresBox"></div>
+        <h2>2. Cadastrar fornecedor</h2>
+        <label>Nome</label>
+        <input id="supplierName" placeholder="Ex: FURLAN AUTO PEÇAS" />
+        <label>WhatsApp com DDD</label>
+        <input id="supplierPhone" placeholder="Ex: 17997631210 ou 5517997631210" />
+        <label>Tipos que atende</label>
+        <input id="supplierTypes" placeholder="Ex: todas as peças ou motor, freio, eletrica" />
+        <button onclick="saveSupplier()">Salvar fornecedor</button>
+        <p class="muted">Para cotar tudo, use: <b>todas as peças</b>.</p>
+      </section>
+
+      <section class="card">
+        <h2>3. Criar cotação no Realtime Database</h2>
+        <p class="muted">Depois de importar a planilha, confira a prévia e clique abaixo.</p>
+        <button class="blue" id="createQuoteBtn" onclick="createQuote()" disabled>Criar cotação online</button>
+        <div id="previewKpis" class="summary"></div>
       </section>
     </div>
+
+    <section id="previewSection" class="card hide" style="margin-top:14px">
+      <h2>Prévia da importação — somente peças</h2>
+      <div id="vehiclePreview" class="muted"></div>
+      <div id="piecesPreview"></div>
+    </section>
 
     <section class="card" style="margin-top:14px">
-      <h2>Cotações</h2>
-      <button class="gray" onclick="carregarCotacoes()">Atualizar</button>
-      <div id="cotacoesBox"></div>
+      <h2>Fornecedores cadastrados</h2>
+      <div id="suppliersBox">Carregando...</div>
     </section>
-  </main>
-</div>
-<footer>Powered by thIAguinho Soluções Digitais</footer>
 
-<script>
-let app, auth, db, currentUser = null, fornecedores = {}, cotacoes = {};
-const LS_CFG = 'valorIA_firebaseConfig_v1';
-function isPlaceholderConfig(cfg){ return !cfg || !cfg.apiKey || String(cfg.apiKey).includes('COLE_AQUI') || !cfg.databaseURL || String(cfg.databaseURL).includes('COLE_AQUI'); }
-function getConfig(){
-  try{ const local = localStorage.getItem(LS_CFG); if(local) return JSON.parse(local); }catch(e){}
-  return window.firebaseConfig;
+    <section class="card" style="margin-top:14px">
+      <div class="toolbar" style="justify-content:space-between">
+        <h2 style="margin:0">Cotações em tempo real</h2>
+        <button class="gray" onclick="loadQuotesOnce()">Atualizar</button>
+      </div>
+      <div id="quotesBox">Carregando...</div>
+    </section>
+  </div>
+  <div class="footer">Powered by thIAguinho Soluções Digitais</div>
+  <div id="toast" class="statusbar hide"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getDatabase, ref, set, update, push, onValue, get, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+let app, db;
+let suppliers = {};
+let quotes = {};
+let responses = {};
+let currentPreview = null;
+
+function showToast(msg, type='ok'){
+  const el=document.getElementById('toast');
+  el.className='statusbar';
+  el.innerHTML=`<b class="${type==='bad'?'bad':type==='warn'?'warn':'ok'}">${msg}</b>`;
+  setTimeout(()=>el.classList.add('hide'),4500);
 }
-function cfgToB64(){ try{return btoa(unescape(encodeURIComponent(JSON.stringify(getConfig()))));}catch(e){return '';} }
-function b64ToCfg(b64){ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
+function showFirebaseError(err){
+  document.getElementById('firebaseError').classList.remove('hide');
+  document.getElementById('firebaseErrorText').textContent = err?.message || String(err);
+}
 function initFirebase(){
-  const cfg = getConfig();
-  if(isPlaceholderConfig(cfg)){ document.getElementById('configCard').classList.remove('hidden'); return; }
   try{
-    app = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg);
-    auth = firebase.auth(); db = firebase.database();
-    document.getElementById('configCard').classList.add('hidden');
-    auth.onAuthStateChanged(user=>{ currentUser=user; if(user){showApp()} else {showLogin()} });
-  }catch(e){ document.getElementById('configCard').classList.remove('hidden'); alert('Erro na configuração Firebase: '+e.message); }
+    app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    bindRealtime();
+  }catch(err){ showFirebaseError(err); }
 }
-function saveFirebaseConfigFromText(){
-  let raw = document.getElementById('firebaseConfigText').value.trim();
-  if(raw.startsWith('const firebaseConfig')) raw = raw.replace(/^const\s+firebaseConfig\s*=\s*/,'').replace(/;\s*$/,'');
-  if(raw.startsWith('window.firebaseConfig')) raw = raw.replace(/^window\.firebaseConfig\s*=\s*/,'').replace(/;\s*$/,'');
-  try{ const cfg = JSON.parse(raw); localStorage.setItem(LS_CFG, JSON.stringify(cfg)); location.reload(); }catch(e){ alert('Não consegui ler a configuração. Cole como JSON com aspas duplas.'); }
+function bindRealtime(){
+  onValue(ref(db,'suppliers'), snap=>{ suppliers=snap.val()||{}; renderSuppliers(); renderQuotes(); }, err=>showFirebaseError(err));
+  onValue(ref(db,'cotacoes'), snap=>{ quotes=snap.val()||{}; renderQuotes(); }, err=>showFirebaseError(err));
+  onValue(ref(db,'respostas'), snap=>{ responses=snap.val()||{}; renderQuotes(); }, err=>showFirebaseError(err));
 }
-function clearLocalConfig(){ localStorage.removeItem(LS_CFG); location.reload(); }
-function showLogin(){ document.getElementById('loginCard').classList.remove('hidden'); document.getElementById('app').classList.add('hidden'); }
-function showApp(){ document.getElementById('loginCard').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); carregarFornecedores(); carregarCotacoes(); }
-function login(){ auth.signInWithEmailAndPassword(email.value, senha.value).catch(e=> loginMsg.innerText = e.message); }
-function logout(){ auth.signOut(); }
-function norm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase(); }
-function moeda(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-function num(v){ if(v===null||v===undefined||v==='')return 0; let s=String(v).replace(/[^\d,.-]/g,''); if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.'); else if(s.includes(','))s=s.replace(',','.'); const n=Number(s); return Number.isFinite(n)?n:0; }
-function fmtPhone(p){ let d=String(p||'').replace(/\D/g,''); if(d.length===10||d.length===11)d='55'+d; return d; }
-function idSafe(){ return Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9); }
-function token(){ return Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)+Date.now().toString(36); }
-function tipo(desc){ const d=norm(desc); const regras=[['freio',['FREIO','PASTILHA','DISCO']],['suspensao',['AMORTECEDOR','BARRA','BUCHA','BANDEJA','PIVO','TERMINAL','BIELETA','MOLA','ROLAMENTO','RODA']],['eletrica',['BATERIA','FAROL','LANTERNA','SENSOR','RESISTOR','MODULO','LAMPADA','PALHETA']],['arrefecimento',['RADIADOR','ADITIVO','VENTOINHA','BOMBA DE AGUA','AGUA']],['motor',['MOTOR','COXIM','VELA','CORREIA','FILTRO','ESCAPE','COLETOR','OLEO','RETENTOR']],['lataria',['TAPETE','BANCO','ASSENTO','CAPO','PARALAMA','PORTA','RETROVISOR']]]; for(const [t,arr] of regras){ if(arr.some(x=>d.includes(x)))return t; } return 'geral'; }
-function extractAfter(cell,label){ const m=String(cell||'').match(new RegExp(label+'\\s*:?\\s*(.+)','i')); return m?m[1].trim():''; }
-function parseWorkbook(wb){
-  let rows=[]; wb.SheetNames.forEach(sn=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''})); });
-  const veiculo={};
-  rows.forEach(r=>r.forEach(c=>{ const s=String(c||'');
-    if(/MARCA\s*:/i.test(s)) veiculo.marca=extractAfter(s,'MARCA');
-    if(/MODELO\s*:/i.test(s)) veiculo.modelo=extractAfter(s,'MODELO');
-    if(/ANO\s*:/i.test(s)) veiculo.ano=extractAfter(s,'ANO');
-    if(/PLACA\s*:/i.test(s)) veiculo.placa=extractAfter(s,'PLACA');
-    if(/CHASSIS?\s*:/i.test(s)) veiculo.chassi=extractAfter(s,'CHASSIS?');
-    if(/^KM\s*:/i.test(s)) veiculo.km=extractAfter(s,'KM');
-    if(/PREFIXO\s*:/i.test(s)) veiculo.prefixo=extractAfter(s,'PREFIXO');
-  }));
-  const itens=[];
-  rows.forEach((r,idx)=>{
-    const itemCod=String(r[1]||'');
-    if(!/^\s*PE[ÇC]A\s*\n?\s*C[ÓO]D\.?:/i.test(itemCod)) return;
-    const cm=itemCod.match(/C[ÓO]D\.?:\s*([^\n\r]+)/i);
-    const codigo=(cm?cm[1]:'').trim();
-    const descricao=String(r[3]||'').trim();
-    if(!descricao) return;
-    const qtd=num(r[4])||1, unit=num(r[5]), desconto=num(r[6]), total=num(r[7]);
-    itens.push({ id:'item_'+(itens.length+1), n:itens.length+1, linhaPlanilha:idx+1, codigoOriginal:codigo, descricaoOriginal:descricao, quantidade:qtd, valorUnitarioPlanilha:unit, descontoPlanilha:desconto, totalPlanilha:total, tipo:tipo(descricao), itemCodigoOriginal:itemCod });
-  });
-  return {veiculo,itens};
+
+function norm(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+function nlow(v){return norm(v).toLowerCase();}
+function money(n){const x=Number(n);return Number.isFinite(x)?x.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'-';}
+function toNumber(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return Number.isFinite(v)?v:0;
+  let s=String(v).replace(/[^\d,.-]/g,'');
+  if(s.includes(',')&&s.includes('.')) s=s.replace(/\./g,'').replace(',','.');
+  else if(s.includes(',')) s=s.replace(',','.');
+  const n=Number(s); return Number.isFinite(n)?n:0;
 }
-async function importarPlanilha(){
-  const f=fileXlsx.files[0]; if(!f)return alert('Escolha a planilha XLSX.');
-  const buf=await f.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'}); const parsed=parseWorkbook(wb);
-  if(!parsed.itens.length)return alert('Nenhuma peça encontrada. O importador só aceita linhas PEÇA / CÓD.');
-  const cotId=(numeroCotacao.value||parsed.veiculo.prefixo||('COT_'+idSafe())).replace(/[^a-zA-Z0-9_-]/g,'_');
-  const total=parsed.itens.reduce((s,i)=>s+(Number(i.totalPlanilha)||0),0);
-  const cot={ id:cotId, numero:cotId, veiculo:parsed.veiculo, itens:parsed.itens, totalPecasPlanilha:total, totalItens:parsed.itens.length, status:'aberta', criadaEm:new Date().toISOString(), arquivo:f.name };
-  await db.ref('cotacoes/'+cotId).set(cot);
-  importResumo.innerHTML=`<p class="ok"><b>${parsed.itens.length}</b> peças importadas. Total real interno: <b>${moeda(total)}</b>. Serviços ignorados.</p>`;
+function uid(prefix='id'){return prefix+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);}
+function extractAfter(label, text){
+  const re = new RegExp(label+'\\s*:\\s*([^\\n|]+)', 'i');
+  const m = String(text||'').match(re);
+  return m ? m[1].trim() : '';
 }
-function salvarFornecedor(){
-  const id='forn_'+idSafe(); const f={id,nome:fornNome.value.trim(),whatsapp:fmtPhone(fornWhats.value),tipos:fornTipos.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean),ativo:true,criadoEm:new Date().toISOString()};
-  if(!f.nome||!f.whatsapp)return alert('Preencha nome e WhatsApp.');
-  db.ref('fornecedores/'+id).set(f); fornNome.value=''; fornWhats.value=''; fornTipos.value='todas as peças';
+function extractCode(cell){
+  const txt=String(cell||'');
+  const m=txt.match(/C[ÓO]D\.?\s*:\s*([^\n\r]+)/i);
+  return m ? m[1].trim() : '';
 }
-function carregarFornecedores(){ db.ref('fornecedores').on('value',snap=>{ fornecedores=snap.val()||{}; renderFornecedores(); }); }
-function renderFornecedores(){ const arr=Object.values(fornecedores); fornecedoresBox.innerHTML= arr.length? `<div class="tableWrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Tipos</th></tr>${arr.map(f=>`<tr><td>${f.nome}</td><td>${f.whatsapp}</td><td>${(f.tipos||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</td></tr>`).join('')}</table></div>`:'<p class="muted">Nenhum fornecedor cadastrado.</p>'; }
-function carregarCotacoes(){ db.ref('cotacoes').on('value',snap=>{ cotacoes=snap.val()||{}; renderCotacoes(); }); }
-function baseUrl(){ return location.href.replace(/index\.html.*$/,'').replace(/\?.*$/,''); }
-async function gerarLinkFornecedor(cotId, fornecedorId){
-  const cot=cotacoes[cotId], f=fornecedores[fornecedorId]; if(!cot||!f)return;
-  const tk=token(); const linkData={cotacaoId:cotId,fornecedorId,fornecedorNome:f.nome,token:tk,veiculo:cot.veiculo,itens:cot.itens,criadoEm:new Date().toISOString(),status:'aberta'};
-  await db.ref(`linksFornecedor/${cotId}/${fornecedorId}/${tk}`).set(linkData);
-  await db.ref(`cotacoes/${cotId}/fornecedores/${fornecedorId}`).set({fornecedorId,nome:f.nome,whatsapp:f.whatsapp,token:tk,link:vendorUrl(cotId,fornecedorId,tk),criadoEm:new Date().toISOString()});
-  alert('Link gerado para '+f.nome);
+function classify(desc){
+  const d=nlow(desc);
+  const groups=[
+    ['arrefecimento',['radiador','ventoinha','aditivo','bomba de agua','bomba dagua','reservatorio','mangueira de agua','agua']],
+    ['eletrica',['bateria','sensor','resistor','lampada','lanterna','farol','modulo','chicote','fusivel','rele','comando da seta']],
+    ['motor',['motor','coxim','correia','filtro','oleo','vela','bico','injetor','junta','cabecote','coletor','retentor']],
+    ['suspensao',['amortecedor','bandeja','bucha','pivo','terminal','bieleta','mola','barra estabilizadora','braco oscilante']],
+    ['freio',['pastilha','disco do freio','freio','sapata','cilindro']],
+    ['lataria',['parachoque','para-choque','grade','capo','porta','paralama','retrovisor','painel','tapete','assento','banco']]
+  ];
+  for(const [tipo, words] of groups){ if(words.some(w=>d.includes(w))) return tipo; }
+  return 'geral';
 }
-function vendorUrl(cotId,fid,tk){ return `${baseUrl()}fornecedor.html?c=${encodeURIComponent(cotId)}&f=${encodeURIComponent(fid)}&t=${encodeURIComponent(tk)}&cfg=${encodeURIComponent(cfgToB64())}`; }
-function msgWhats(cotId, fornecedorId, tk){ const cot=cotacoes[cotId], f=fornecedores[fornecedorId]; const v=cot.veiculo||{}; const link=vendorUrl(cotId,fornecedorId,tk); return `${f.nome}, cotação #${cot.numero} - ${v.modelo||''} ${v.placa||''}\n\nSão ${cot.totalItens||cot.itens.length} peças para cotar.\nPreencha pelo link:\n${link}\n\nPode responder parcial. Campos: marca, cód. marca, descrição, preço e disponibilidade.`; }
-function abrirWhats(cotId, fornecedorId, tk){ const f=fornecedores[fornecedorId]; window.open(`https://wa.me/${f.whatsapp}?text=${encodeURIComponent(msgWhats(cotId,fornecedorId,tk))}`,'_blank'); }
-function renderCotacoes(){
-  const arr=Object.values(cotacoes).sort((a,b)=>(b.criadaEm||'').localeCompare(a.criadaEm||''));
-  if(!arr.length){ cotacoesBox.innerHTML='<p class="muted">Nenhuma cotação ainda.</p>'; return; }
-  cotacoesBox.innerHTML=arr.map(c=>{
-    const fs=c.fornecedores||{}; const respostasBox=`respostas_${c.id}`;
-    setTimeout(()=>listenRespostas(c.id),50);
-    return `<div class="cotacaoBox"><h3>#${c.numero} — ${c.veiculo?.modelo||''} ${c.veiculo?.placa||''}</h3>
-      <div class="stat"><div><span class="muted">Peças</span><br><b>${c.totalItens||c.itens.length}</b></div><div><span class="muted">Valor real interno</span><br><b>${moeda(c.totalPecasPlanilha)}</b></div><div><span class="muted">Status</span><br><b>${c.status||'aberta'}</b></div></div>
-      <h3>Gerar link para fornecedor</h3><div class="row"><select id="sel_${c.id}">${Object.values(fornecedores).map(f=>`<option value="${f.id}">${f.nome}</option>`).join('')}</select><button onclick="gerarLinkFornecedor('${c.id}',document.getElementById('sel_${c.id}').value)">Gerar link</button></div>
-      <h3>Links gerados</h3>${Object.values(fs).length?Object.values(fs).map(f=>`<div class="quote"><b>${f.nome}</b><br><span class="copy">${f.link}</span><br><button class="blue" onclick="abrirWhats('${c.id}','${f.fornecedorId}','${f.token}')">Enviar convite no WhatsApp</button></div>`).join(''):'<p class="muted">Nenhum link gerado ainda.</p>'}
-      <details><summary>Ver peças importadas</summary><div class="tableWrap"><table><tr><th>N</th><th>Código original</th><th>Descrição</th><th>Qtd</th><th>Unit. planilha</th><th>Desc.</th><th>Total real</th><th>Tipo</th></tr>${(c.itens||[]).map(i=>`<tr><td>${i.n}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}</td><td>${i.quantidade}</td><td>${moeda(i.valorUnitarioPlanilha)}</td><td>${Math.round((i.descontoPlanilha||0)*100)}%</td><td>${moeda(i.totalPlanilha)}</td><td><span class="pill">${i.tipo}</span></td></tr>`).join('')}</table></div></details>
-      <h3>Resultado em tempo real</h3><div id="${respostasBox}" class="muted">Aguardando respostas...</div>
-    </div>`;
-  }).join('');
+function normalizePhone(phone){
+  let d=String(phone||'').replace(/\D/g,'');
+  if(d.length===10 || d.length===11) d='55'+d;
+  return d;
 }
-function listenRespostas(cotId){ db.ref('respostas/'+cotId).on('value',snap=>renderResultados(cotId,snap.val()||{})); }
-function flattenRespostas(data){ const out=[]; Object.values(data||{}).forEach(byToken=>Object.values(byToken||{}).forEach(resp=>{ const itens=resp.itens||{}; Object.values(itens).forEach(item=>out.push({...item,fornecedorNome:resp.fornecedorNome||item.fornecedorNome||'',fornecedorId:resp.fornecedorId||item.fornecedorId||''})); })); return out; }
-function renderResultados(cotId,data){ const c=cotacoes[cotId]; const el=document.getElementById('respostas_'+cotId); if(!c||!el)return; const resps=flattenRespostas(data); const byItem={}; resps.forEach(r=>{ if(!byItem[r.itemId])byItem[r.itemId]=[]; if(r.temDisponivel!==false && Number(r.precoUnitario)>0) byItem[r.itemId].push(r); });
-  const respondidas=new Set(resps.map(r=>r.itemId)).size; const linhas=(c.itens||[]).map(i=>{ const arr=(byItem[i.id]||[]).sort((a,b)=>Number(a.precoUnitario)-Number(b.precoUnitario)); const best=arr[0]; return `<tr class="${best?'best':''}"><td>${i.n}</td><td>${i.codigoOriginal}<br><span class="muted">${i.descricaoOriginal}</span></td><td>${best?`<b>${best.fornecedorNome}</b><br>${best.marca||''} ${best.codigoMarca?(' / '+best.codigoMarca):''}<br>${best.descricaoFornecedor||''}<br><b>${moeda(Number(best.precoUnitario))}</b> x ${i.quantidade} = <b>${moeda(Number(best.precoUnitario)*Number(i.quantidade||1))}</b><br>${best.disponibilidade||''}`:'<span class="warnText">sem resposta</span>'}</td><td>${arr.map(r=>`${r.fornecedorNome}: ${moeda(Number(r.precoUnitario))} | ${r.marca||'-'} | ${r.codigoMarca||'-'} | ${r.disponibilidade||'-'}`).join('<br>')||'-'}</td></tr>`; }).join('');
-  el.innerHTML=`<p class="ok"><b>${respondidas}</b> de <b>${c.itens.length}</b> peças têm alguma resposta salva.</p><div class="tableWrap"><table><tr><th>N</th><th>Peça</th><th>Melhor preço</th><th>Todas as respostas válidas</th></tr>${linhas}</table></div>`;
+function typeList(str){
+  return String(str||'').split(',').map(x=>nlow(x)).filter(Boolean);
 }
+function supplierCoversPiece(supplier, piece){
+  const types=(supplier.tipos||[]).map(nlow);
+  if(types.length===0) return true;
+  if(types.some(t=>t.includes('todas')||t.includes('todos')||t==='geral'||t==='tudo')) return true;
+  return types.includes(nlow(piece.tipo));
+}
+function getPiecesArray(q){return Object.values(q.pecas||{}).sort((a,b)=>(a.ordem||0)-(b.ordem||0));}
+function getFilteredPieces(q, supplier){return getPiecesArray(q).filter(p=>supplierCoversPiece(supplier,p));}
+
+async function parseSpreadsheet(){
+  const file=document.getElementById('fileInput').files[0];
+  if(!file){showToast('Escolha uma planilha XLSX.', 'warn');return;}
+  try{
+    const data=await file.arrayBuffer();
+    const wb=XLSX.read(data,{type:'array'});
+    let rows=[];
+    wb.SheetNames.forEach(name=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''})); });
+    const allText=rows.flat().map(x=>String(x||'')).join('\n');
+    const vehicle={
+      marca: extractAfter('MARCA', allText),
+      modelo: extractAfter('MODELO', allText),
+      ano: extractAfter('ANO', allText),
+      placa: extractAfter('PLACA', allText),
+      chassi: extractAfter('CHASSIS?', allText),
+      km: extractAfter('KM', allText),
+      prefixo: extractAfter('PREFIXO', allText),
+      patrimonio: extractAfter('PATRIMONIO', allText)
+    };
+    const pieces=[];
+    let ignoredServices=0;
+    for(let r=0;r<rows.length;r++){
+      const row=rows[r]||[];
+      const itemCell=String(row[1]||'').trim();
+      const itemNorm=nlow(itemCell);
+      if(itemNorm.startsWith('servico')) { ignoredServices++; continue; }
+      if(!(itemNorm.startsWith('peca') && itemNorm.includes('cod'))) continue;
+      const code=extractCode(itemCell) || 'sem oem';
+      const desc=String(row[3]||'').trim();
+      if(!desc) continue;
+      const qtd=toNumber(row[4]) || 1;
+      const unit=toNumber(row[5]);
+      const desconto=toNumber(row[6]);
+      const total=toNumber(row[7]);
+      const id='p'+String(pieces.length+1).padStart(3,'0');
+      pieces.push({
+        id, ordem:pieces.length+1, linhaPlanilha:r+1,
+        codigoOriginal:code, descricaoOriginal:desc, quantidade:qtd,
+        valorUnitarioPlanilha:unit, descontoPlanilha:desconto, totalLiquidoPlanilha:total,
+        tipo:classify(desc)
+      });
+    }
+    if(!pieces.length) throw new Error('Nenhuma PEÇA encontrada. Verifique se a planilha usa o padrão PEÇA / CÓD.');
+    const numero = document.getElementById('quoteNumber').value.trim() || vehicle.prefixo || file.name.replace(/\.[^.]+$/,'');
+    currentPreview={ numero, arquivo:file.name, vehicle, pieces, ignoredServices, createdAt:new Date().toISOString() };
+    document.getElementById('quoteNumber').value=numero;
+    document.getElementById('createQuoteBtn').disabled=false;
+    renderPreview();
+    showToast(`${pieces.length} peças importadas. ${ignoredServices} serviços ignorados.`);
+  }catch(err){showToast(err.message,'bad');console.error(err);}
+}
+function clearPreview(){ currentPreview=null; document.getElementById('createQuoteBtn').disabled=true; document.getElementById('previewSection').classList.add('hide'); document.getElementById('previewKpis').innerHTML=''; }
+function renderPreview(){
+  const p=currentPreview; if(!p) return;
+  const total=p.pieces.reduce((s,x)=>s+(Number(x.totalLiquidoPlanilha)||0),0);
+  document.getElementById('previewKpis').innerHTML=`
+    <div class="kpi"><b>${p.pieces.length}</b><small>peças importadas</small></div>
+    <div class="kpi"><b>${p.ignoredServices}</b><small>serviços ignorados</small></div>
+    <div class="kpi"><b>${money(total)}</b><small>valor líquido peças</small></div>`;
+  document.getElementById('previewSection').classList.remove('hide');
+  document.getElementById('vehiclePreview').innerHTML=`<b>OS:</b> ${p.numero} | <b>Veículo:</b> ${p.vehicle.marca||'-'} ${p.vehicle.modelo||'-'} | <b>Placa:</b> ${p.vehicle.placa||'-'} | <b>Chassi:</b> ${p.vehicle.chassi||'-'} | <b>KM:</b> ${p.vehicle.km||'-'}`;
+  document.getElementById('piecesPreview').innerHTML=`<div class="list"><table><thead><tr><th>#</th><th>Código original</th><th>Descrição</th><th>Qtd</th><th>Tipo</th><th>Unit. planilha</th><th>Desc.</th><th>Total líquido</th><th>Linha</th></tr></thead><tbody>${p.pieces.map(x=>`<tr><td>${x.ordem}</td><td class="mono">${x.codigoOriginal}</td><td>${x.descricaoOriginal}</td><td>${x.quantidade}</td><td><span class="pill">${x.tipo}</span></td><td>${money(x.valorUnitarioPlanilha)}</td><td>${(x.descontoPlanilha*100).toFixed(0)}%</td><td>${money(x.totalLiquidoPlanilha)}</td><td>${x.linhaPlanilha}</td></tr>`).join('')}</tbody></table></div>`;
+}
+async function createQuote(){
+  if(!currentPreview){showToast('Importe uma planilha primeiro.','warn');return;}
+  try{
+    const id = currentPreview.numero.replace(/[^a-zA-Z0-9_-]/g,'_')+'_'+Date.now().toString(36);
+    const piecesObj={};
+    currentPreview.pieces.forEach(p=>piecesObj[p.id]=p);
+    const quote={
+      id, numero:currentPreview.numero, arquivo:currentPreview.arquivo, veiculo:currentPreview.vehicle,
+      pecas:piecesObj, totalPecas:currentPreview.pieces.length, totalLiquidoPecas:currentPreview.pieces.reduce((s,x)=>s+(Number(x.totalLiquidoPlanilha)||0),0),
+      servicosIgnorados:currentPreview.ignoredServices, status:'aberta', criadaEm:new Date().toISOString()
+    };
+    const publicPieces={};
+    currentPreview.pieces.forEach(p=>publicPieces[p.id]={ id:p.id, ordem:p.ordem, codigoOriginal:p.codigoOriginal, descricaoOriginal:p.descricaoOriginal, quantidade:p.quantidade, tipo:p.tipo });
+    const publicQuote={ id, numero:quote.numero, veiculo:quote.veiculo, pecas:publicPieces, status:'aberta', criadaEm:quote.criadaEm };
+    await set(ref(db,`cotacoes/${id}`), quote);
+    await set(ref(db,`publicCotacoes/${id}`), publicQuote);
+    clearPreview();
+    showToast('Cotação criada online. Agora gere os links dos fornecedores.');
+  }catch(err){showToast(err.message,'bad');console.error(err);}
+}
+async function saveSupplier(){
+  const nome=document.getElementById('supplierName').value.trim();
+  const whatsapp=normalizePhone(document.getElementById('supplierPhone').value);
+  const tipos=typeList(document.getElementById('supplierTypes').value||'todas as peças');
+  if(!nome || !whatsapp){showToast('Preencha nome e WhatsApp.','warn');return;}
+  try{
+    const id=uid('forn');
+    await set(ref(db,`suppliers/${id}`), {id,nome,whatsapp,tipos,ativo:true,criadoEm:new Date().toISOString()});
+    document.getElementById('supplierName').value=''; document.getElementById('supplierPhone').value=''; document.getElementById('supplierTypes').value='';
+    showToast('Fornecedor salvo.');
+  }catch(err){showToast(err.message,'bad');}
+}
+async function deleteSupplier(id){ if(!confirm('Remover fornecedor?')) return; await remove(ref(db,`suppliers/${id}`)); showToast('Fornecedor removido.'); }
+function renderSuppliers(){
+  const arr=Object.values(suppliers).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  const el=document.getElementById('suppliersBox');
+  if(!arr.length){el.innerHTML='<p class="muted">Nenhum fornecedor cadastrado ainda.</p>';return;}
+  el.innerHTML=`<table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Tipos</th><th>Ação</th></tr></thead><tbody>${arr.map(s=>`<tr><td>${s.nome}</td><td class="mono">${s.whatsapp}</td><td>${(s.tipos||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</td><td><button class="red" onclick="deleteSupplier('${s.id}')">Remover</button></td></tr>`).join('')}</tbody></table>`;
+}
+function supplierLink(quoteId, supplier){
+  const token = supplier.token || '';
+  const u = new URL('./fornecedor.html', window.location.href);
+  u.searchParams.set('cotacao', quoteId); u.searchParams.set('fornecedor', supplier.id); u.searchParams.set('token', token);
+  return u.href;
+}
+async function ensureSupplierOnQuote(qid, sid){
+  const s=suppliers[sid]; if(!s) throw new Error('Fornecedor não encontrado.');
+  const token = (quotes[qid]?.fornecedores?.[sid]?.token) || Math.random().toString(36).slice(2)+Date.now().toString(36);
+  const payload={ id:s.id, nome:s.nome, whatsapp:s.whatsapp, tipos:s.tipos||[], token, vinculadoEm:new Date().toISOString() };
+  await update(ref(db), { [`cotacoes/${qid}/fornecedores/${sid}`]: payload, [`publicCotacoes/${qid}/fornecedores/${sid}`]: {id:s.id,nome:s.nome,tipos:s.tipos||[]} });
+  return payload;
+}
+async function generateInvite(qid, sid){
+  try{
+    const q=quotes[qid], s0=suppliers[sid];
+    const s=await ensureSupplierOnQuote(qid,sid);
+    const pieces=getFilteredPieces(q,s0);
+    const link=supplierLink(qid,s);
+    const msg=`${s.nome}, cotação #${q.numero} - ${q.veiculo?.modelo||''} ${q.veiculo?.placa||''}\n\nSão ${pieces.length} peça(s) para cotar.\nPreencha pelo link:\n${link}\n\nPode salvar parcial. Campos: marca, cód. marca, descrição, preço e disponibilidade.`;
+    const wa=`https://wa.me/${s.whatsapp}?text=${encodeURIComponent(msg)}`;
+    const box=document.getElementById(`invite_${qid}_${sid}`);
+    box.innerHTML=`<div class="copybox">${msg}</div><div class="toolbar"><button onclick="copyText(${JSON.stringify(msg).replace(/"/g,'&quot;')})">Copiar mensagem</button><a href="${wa}" target="_blank"><button class="blue">Abrir WhatsApp</button></a><a href="${link}" target="_blank"><button class="gray">Abrir formulário</button></a></div>`;
+  }catch(err){showToast(err.message,'bad');}
+}
+function getQuoteResponses(qid){return responses[qid]||{};}
+function responsesForPiece(qid, pid){
+  const r=getQuoteResponses(qid); const out=[];
+  Object.values(r).forEach(supResp=>{ if(supResp && supResp[pid]) out.push(supResp[pid]); });
+  return out;
+}
+function bestForPiece(qid, p){
+  const rs=responsesForPiece(qid,p.id).filter(r=>r.temDisponivel!==false && Number(r.precoUnitario)>0);
+  rs.sort((a,b)=>Number(a.precoUnitario)-Number(b.precoUnitario));
+  return {best:rs[0]||null, all:rs};
+}
+function renderQuotes(){
+  const el=document.getElementById('quotesBox');
+  const arr=Object.values(quotes).sort((a,b)=>String(b.criadaEm||'').localeCompare(String(a.criadaEm||'')));
+  if(!arr.length){el.innerHTML='<p class="muted">Nenhuma cotação criada ainda.</p>';return;}
+  const supplierArr=Object.values(suppliers).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  el.innerHTML=arr.map(q=>renderQuote(q,supplierArr)).join('');
+}
+function renderQuote(q,supplierArr){
+  const pieces=getPiecesArray(q); const total=pieces.length;
+  let withResp=0, withWinner=0;
+  pieces.forEach(p=>{const b=bestForPiece(q.id,p); if(responsesForPiece(q.id,p.id).length) withResp++; if(b.best) withWinner++;});
+  return `<div class="quote">
+    <div class="toolbar" style="justify-content:space-between"><h3>Cotação #${q.numero}</h3><span class="pill">${q.status||'aberta'}</span></div>
+    <p class="muted"><b>Veículo:</b> ${q.veiculo?.marca||''} ${q.veiculo?.modelo||''} | <b>Placa:</b> ${q.veiculo?.placa||'-'} | <b>Chassi:</b> ${q.veiculo?.chassi||'-'} | <b>Arquivo:</b> ${q.arquivo||'-'}</p>
+    <div class="summary"><div class="kpi"><b>${total}</b><small>peças</small></div><div class="kpi"><b>${withResp}</b><small>peças com resposta</small></div><div class="kpi"><b>${withWinner}</b><small>peças com preço válido</small></div><div class="kpi"><b>${money(q.totalLiquidoPecas)}</b><small>valor interno planilha</small></div></div>
+    <details open><summary><b>Gerar links para fornecedores</b></summary>${supplierArr.length?supplierArr.map(s=>{const count=getFilteredPieces(q,s).length; return `<div style="border-top:1px solid var(--line);padding:10px 0"><b>${s.nome}</b> <span class="pill">${count} peça(s)</span><button class="blue" onclick="generateInvite('${q.id}','${s.id}')">Gerar convite WhatsApp</button><div id="invite_${q.id}_${s.id}"></div></div>`}).join(''):'<p class="muted">Cadastre fornecedores primeiro.</p>'}</details>
+    <details open><summary><b>Melhores opções por peça</b></summary>${renderWinnersTable(q,pieces)}</details>
+    <details><summary>Ver todas as peças e valores internos da planilha</summary>${renderInternalPieces(q,pieces)}</details>
+  </div>`;
+}
+function renderWinnersTable(q,pieces){
+  return `<div class="list"><table><thead><tr><th>#</th><th>Código original</th><th>Peça</th><th>Qtd</th><th>Melhor opção</th><th>Todas as respostas</th></tr></thead><tbody>${pieces.map(p=>{const b=bestForPiece(q.id,p); return `<tr><td>${p.ordem}</td><td class="mono">${p.codigoOriginal}</td><td>${p.descricaoOriginal}</td><td>${p.quantidade}</td><td>${b.best?`<b class="ok">${b.best.fornecedorNome||b.best.fornecedorId}</b><br>${b.best.marca||'-'} ${b.best.codigoMarca?`/ ${b.best.codigoMarca}`:''}<br><b>${money(b.best.precoUnitario)}</b> un. | total ${money(Number(b.best.precoUnitario)*Number(p.quantidade||1))}<br>${b.best.disponibilidade||'-'}<br><small>${b.best.descricaoFornecedor||''}</small>`:`<span class="warn">sem preço válido</span>`}</td><td>${b.all.length?b.all.map(r=>`${r.fornecedorNome||r.fornecedorId}: ${money(r.precoUnitario)} | ${r.marca||'-'} | ${r.disponibilidade||'-'}`).join('<br>'):'-'}</td></tr>`}).join('')}</tbody></table></div>`;
+}
+function renderInternalPieces(q,pieces){
+  return `<div class="list"><table><thead><tr><th>#</th><th>Cód.</th><th>Descrição</th><th>Tipo</th><th>Qtd</th><th>Unit. planilha</th><th>Desc.</th><th>Total líquido</th></tr></thead><tbody>${pieces.map(p=>`<tr><td>${p.ordem}</td><td class="mono">${p.codigoOriginal}</td><td>${p.descricaoOriginal}</td><td><span class="pill">${p.tipo}</span></td><td>${p.quantidade}</td><td>${money(p.valorUnitarioPlanilha)}</td><td>${((Number(p.descontoPlanilha)||0)*100).toFixed(0)}%</td><td>${money(p.totalLiquidoPlanilha)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+async function loadQuotesOnce(){ const s=await get(ref(db,'cotacoes')); quotes=s.val()||{}; renderQuotes(); showToast('Atualizado.'); }
+function copyText(text){ navigator.clipboard.writeText(text).then(()=>showToast('Copiado.')).catch(()=>prompt('Copie o texto:', text)); }
+
+window.parseSpreadsheet=parseSpreadsheet; window.clearPreview=clearPreview; window.createQuote=createQuote; window.saveSupplier=saveSupplier; window.deleteSupplier=deleteSupplier; window.generateInvite=generateInvite; window.loadQuotesOnce=loadQuotesOnce; window.copyText=copyText;
 initFirebase();
 </script>
 </body>

@@ -1,41 +1,8 @@
 {
   "rules": {
-    ".read": false,
-    ".write": false,
-
-    "fornecedores": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-
-    "cotacoes": {
-      "$cotacaoId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
-    },
-
-    "linksFornecedor": {
-      "$cotacaoId": {
-        "$fornecedorId": {
-          "$token": {
-            ".read": "data.exists()",
-            ".write": "auth != null"
-          }
-        }
-      }
-    },
-
-    "respostas": {
-      "$cotacaoId": {
-        ".read": "auth != null",
-        "$fornecedorId": {
-          "$token": {
-            ".read": "auth != null || root.child('linksFornecedor/'+$cotacaoId+'/'+$fornecedorId+'/'+$token).exists()",
-            ".write": "auth != null || root.child('linksFornecedor/'+$cotacaoId+'/'+$fornecedorId+'/'+$token).exists()"
-          }
-        }
-      }
-    }
+    "cotacoes": { ".read": true, ".write": true },
+    "publicCotacoes": { ".read": true, ".write": true },
+    "respostas": { ".read": true, ".write": true },
+    "suppliers": { ".read": true, ".write": true }
   }
 }
