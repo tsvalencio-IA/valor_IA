@@ -1,1 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>valor_IA — Sistema de Cotação</title>
+  <script src="firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{--bg:#08111f;--card:#101827;--card2:#0b1220;--line:#243145;--text:#f8fafc;--muted:#9aa9bd;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--blue:#38bdf8;--violet:#a78bfa}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#020617,#102044 60%,#111827);color:var(--text);font-family:Arial,Helvetica,sans-serif} header{padding:16px 18px;background:rgba(2,6,23,.9);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10} h1{margin:0;font-size:22px}.sub{color:var(--muted);font-size:13px;margin-top:4px}.wrap{max-width:1300px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.card{background:rgba(15,23,42,.94);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 14px 40px rgba(0,0,0,.25)} h2{font-size:18px;margin:0 0 12px} h3{font-size:16px;margin:12px 0 8px} label{display:block;color:var(--muted);font-size:13px;margin:9px 0 5px} input,select,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:#020617;color:var(--text)} textarea{min-height:88px} button{border:0;border-radius:12px;background:var(--ok);color:#052e16;font-weight:700;padding:10px 13px;margin:4px 4px 4px 0;cursor:pointer} button.blue{background:var(--blue);color:#062436} button.gray{background:#475569;color:white} button.bad{background:var(--bad);color:white} button.warn{background:var(--warn);color:#3b2500}.hidden{display:none!important}.muted{color:var(--muted)}.ok{color:#86efac}.warnText{color:#fde68a}.badText{color:#fca5a5}.pill{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;margin:2px;color:#dbeafe;font-size:12px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tableWrap{overflow:auto;border-radius:14px;border:1px solid var(--line);margin-top:10px} table{width:100%;border-collapse:collapse;min-width:920px} th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top;font-size:13px} th{background:#020617;color:#cbd5e1;position:sticky;top:0}.quote{background:#020617;border:1px solid var(--line);padding:10px;border-radius:12px;white-space:pre-wrap;font-size:13px}.copy{font-family:Consolas,monospace;font-size:12px}.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.stat div{background:#020617;border:1px solid var(--line);border-radius:12px;padding:10px}.stat b{font-size:18px}.cotacaoBox{border:1px solid var(--line);border-radius:16px;background:#020617;padding:12px;margin:10px 0}.best{border-left:4px solid var(--ok)} footer{text-align:center;color:var(--muted);padding:24px}.logo{font-weight:800;letter-spacing:.3px}
+  </style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">valor_IA</span> — Sistema de Cotação por Link</h1>
+  <div class="sub">WhatsApp envia só o convite. Vendedor responde no formulário. Painel atualiza em tempo real.</div>
+</header>
+<div class="wrap">
+  <section id="configCard" class="card hidden">
+    <h2>1. Configurar Firebase</h2>
+    <p class="muted">Cole a configuração do app Web do Firebase. A configuração Web não é senha; quem protege os dados são as regras do Realtime Database.</p>
+    <textarea id="firebaseConfigText" placeholder='Cole aqui o objeto firebaseConfig, exemplo: { "apiKey": "...", "authDomain": "...", "databaseURL": "..." }'></textarea>
+    <button onclick="saveFirebaseConfigFromText()">Salvar configuração neste navegador</button>
+    <button class="gray" onclick="clearLocalConfig()">Limpar configuração local</button>
+  </section>
 
+  <section id="loginCard" class="card hidden">
+    <h2>2. Entrar como administrador</h2>
+    <div class="grid">
+      <div><label>E-mail</label><input id="email" type="email" placeholder="admin@email.com"></div>
+      <div><label>Senha</label><input id="senha" type="password" placeholder="Senha criada no Firebase Auth"></div>
+    </div>
+    <button onclick="login()">Entrar</button>
+    <p id="loginMsg" class="muted"></p>
+  </section>
+
+  <main id="app" class="hidden">
+    <div class="grid">
+      <section class="card">
+        <h2>Importar planilha da OS</h2>
+        <label>Número/Prefixo da cotação</label><input id="numeroCotacao" placeholder="Ex: I52203 ou 52203">
+        <label>Planilha XLSX</label><input id="fileXlsx" type="file" accept=".xlsx,.xls,.csv">
+        <button onclick="importarPlanilha()">Importar somente peças</button>
+        <button class="gray" onclick="logout()">Sair</button>
+        <p class="muted">Este importador aceita somente linhas iniciadas por <b>PEÇA / CÓD.</b>. Serviços são ignorados.</p>
+        <div id="importResumo"></div>
+      </section>
+
+      <section class="card">
+        <h2>Fornecedor</h2>
+        <label>Nome</label><input id="fornNome" placeholder="Ex: FURLAN AUTO PEÇAS">
+        <label>WhatsApp</label><input id="fornWhats" placeholder="Ex: 17997631210 ou 5517997631210">
+        <label>Tipos atendidos</label><input id="fornTipos" value="todas as peças" placeholder="todas as peças, freio, suspensão, elétrica...">
+        <button onclick="salvarFornecedor()">Salvar fornecedor</button>
+        <div id="fornecedoresBox"></div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:14px">
+      <h2>Cotações</h2>
+      <button class="gray" onclick="carregarCotacoes()">Atualizar</button>
+      <div id="cotacoesBox"></div>
+    </section>
+  </main>
+</div>
+<footer>Powered by thIAguinho Soluções Digitais</footer>
+
+<script>
+let app, auth, db, currentUser = null, fornecedores = {}, cotacoes = {};
+const LS_CFG = 'valorIA_firebaseConfig_v1';
+function isPlaceholderConfig(cfg){ return !cfg || !cfg.apiKey || String(cfg.apiKey).includes('COLE_AQUI') || !cfg.databaseURL || String(cfg.databaseURL).includes('COLE_AQUI'); }
+function getConfig(){
+  try{ const local = localStorage.getItem(LS_CFG); if(local) return JSON.parse(local); }catch(e){}
+  return window.firebaseConfig;
+}
+function cfgToB64(){ try{return btoa(unescape(encodeURIComponent(JSON.stringify(getConfig()))));}catch(e){return '';} }
+function b64ToCfg(b64){ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
+function initFirebase(){
+  const cfg = getConfig();
+  if(isPlaceholderConfig(cfg)){ document.getElementById('configCard').classList.remove('hidden'); return; }
+  try{
+    app = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg);
+    auth = firebase.auth(); db = firebase.database();
+    document.getElementById('configCard').classList.add('hidden');
+    auth.onAuthStateChanged(user=>{ currentUser=user; if(user){showApp()} else {showLogin()} });
+  }catch(e){ document.getElementById('configCard').classList.remove('hidden'); alert('Erro na configuração Firebase: '+e.message); }
+}
+function saveFirebaseConfigFromText(){
+  let raw = document.getElementById('firebaseConfigText').value.trim();
+  if(raw.startsWith('const firebaseConfig')) raw = raw.replace(/^const\s+firebaseConfig\s*=\s*/,'').replace(/;\s*$/,'');
+  if(raw.startsWith('window.firebaseConfig')) raw = raw.replace(/^window\.firebaseConfig\s*=\s*/,'').replace(/;\s*$/,'');
+  try{ const cfg = JSON.parse(raw); localStorage.setItem(LS_CFG, JSON.stringify(cfg)); location.reload(); }catch(e){ alert('Não consegui ler a configuração. Cole como JSON com aspas duplas.'); }
+}
+function clearLocalConfig(){ localStorage.removeItem(LS_CFG); location.reload(); }
+function showLogin(){ document.getElementById('loginCard').classList.remove('hidden'); document.getElementById('app').classList.add('hidden'); }
+function showApp(){ document.getElementById('loginCard').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); carregarFornecedores(); carregarCotacoes(); }
+function login(){ auth.signInWithEmailAndPassword(email.value, senha.value).catch(e=> loginMsg.innerText = e.message); }
+function logout(){ auth.signOut(); }
+function norm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase(); }
+function moeda(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function num(v){ if(v===null||v===undefined||v==='')return 0; let s=String(v).replace(/[^\d,.-]/g,''); if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.'); else if(s.includes(','))s=s.replace(',','.'); const n=Number(s); return Number.isFinite(n)?n:0; }
+function fmtPhone(p){ let d=String(p||'').replace(/\D/g,''); if(d.length===10||d.length===11)d='55'+d; return d; }
+function idSafe(){ return Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9); }
+function token(){ return Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function tipo(desc){ const d=norm(desc); const regras=[['freio',['FREIO','PASTILHA','DISCO']],['suspensao',['AMORTECEDOR','BARRA','BUCHA','BANDEJA','PIVO','TERMINAL','BIELETA','MOLA','ROLAMENTO','RODA']],['eletrica',['BATERIA','FAROL','LANTERNA','SENSOR','RESISTOR','MODULO','LAMPADA','PALHETA']],['arrefecimento',['RADIADOR','ADITIVO','VENTOINHA','BOMBA DE AGUA','AGUA']],['motor',['MOTOR','COXIM','VELA','CORREIA','FILTRO','ESCAPE','COLETOR','OLEO','RETENTOR']],['lataria',['TAPETE','BANCO','ASSENTO','CAPO','PARALAMA','PORTA','RETROVISOR']]]; for(const [t,arr] of regras){ if(arr.some(x=>d.includes(x)))return t; } return 'geral'; }
+function extractAfter(cell,label){ const m=String(cell||'').match(new RegExp(label+'\\s*:?\\s*(.+)','i')); return m?m[1].trim():''; }
+function parseWorkbook(wb){
+  let rows=[]; wb.SheetNames.forEach(sn=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''})); });
+  const veiculo={};
+  rows.forEach(r=>r.forEach(c=>{ const s=String(c||'');
+    if(/MARCA\s*:/i.test(s)) veiculo.marca=extractAfter(s,'MARCA');
+    if(/MODELO\s*:/i.test(s)) veiculo.modelo=extractAfter(s,'MODELO');
+    if(/ANO\s*:/i.test(s)) veiculo.ano=extractAfter(s,'ANO');
+    if(/PLACA\s*:/i.test(s)) veiculo.placa=extractAfter(s,'PLACA');
+    if(/CHASSIS?\s*:/i.test(s)) veiculo.chassi=extractAfter(s,'CHASSIS?');
+    if(/^KM\s*:/i.test(s)) veiculo.km=extractAfter(s,'KM');
+    if(/PREFIXO\s*:/i.test(s)) veiculo.prefixo=extractAfter(s,'PREFIXO');
+  }));
+  const itens=[];
+  rows.forEach((r,idx)=>{
+    const itemCod=String(r[1]||'');
+    if(!/^\s*PE[ÇC]A\s*\n?\s*C[ÓO]D\.?:/i.test(itemCod)) return;
+    const cm=itemCod.match(/C[ÓO]D\.?:\s*([^\n\r]+)/i);
+    const codigo=(cm?cm[1]:'').trim();
+    const descricao=String(r[3]||'').trim();
+    if(!descricao) return;
+    const qtd=num(r[4])||1, unit=num(r[5]), desconto=num(r[6]), total=num(r[7]);
+    itens.push({ id:'item_'+(itens.length+1), n:itens.length+1, linhaPlanilha:idx+1, codigoOriginal:codigo, descricaoOriginal:descricao, quantidade:qtd, valorUnitarioPlanilha:unit, descontoPlanilha:desconto, totalPlanilha:total, tipo:tipo(descricao), itemCodigoOriginal:itemCod });
+  });
+  return {veiculo,itens};
+}
+async function importarPlanilha(){
+  const f=fileXlsx.files[0]; if(!f)return alert('Escolha a planilha XLSX.');
+  const buf=await f.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'}); const parsed=parseWorkbook(wb);
+  if(!parsed.itens.length)return alert('Nenhuma peça encontrada. O importador só aceita linhas PEÇA / CÓD.');
+  const cotId=(numeroCotacao.value||parsed.veiculo.prefixo||('COT_'+idSafe())).replace(/[^a-zA-Z0-9_-]/g,'_');
+  const total=parsed.itens.reduce((s,i)=>s+(Number(i.totalPlanilha)||0),0);
+  const cot={ id:cotId, numero:cotId, veiculo:parsed.veiculo, itens:parsed.itens, totalPecasPlanilha:total, totalItens:parsed.itens.length, status:'aberta', criadaEm:new Date().toISOString(), arquivo:f.name };
+  await db.ref('cotacoes/'+cotId).set(cot);
+  importResumo.innerHTML=`<p class="ok"><b>${parsed.itens.length}</b> peças importadas. Total real interno: <b>${moeda(total)}</b>. Serviços ignorados.</p>`;
+}
+function salvarFornecedor(){
+  const id='forn_'+idSafe(); const f={id,nome:fornNome.value.trim(),whatsapp:fmtPhone(fornWhats.value),tipos:fornTipos.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean),ativo:true,criadoEm:new Date().toISOString()};
+  if(!f.nome||!f.whatsapp)return alert('Preencha nome e WhatsApp.');
+  db.ref('fornecedores/'+id).set(f); fornNome.value=''; fornWhats.value=''; fornTipos.value='todas as peças';
+}
+function carregarFornecedores(){ db.ref('fornecedores').on('value',snap=>{ fornecedores=snap.val()||{}; renderFornecedores(); }); }
+function renderFornecedores(){ const arr=Object.values(fornecedores); fornecedoresBox.innerHTML= arr.length? `<div class="tableWrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Tipos</th></tr>${arr.map(f=>`<tr><td>${f.nome}</td><td>${f.whatsapp}</td><td>${(f.tipos||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</td></tr>`).join('')}</table></div>`:'<p class="muted">Nenhum fornecedor cadastrado.</p>'; }
+function carregarCotacoes(){ db.ref('cotacoes').on('value',snap=>{ cotacoes=snap.val()||{}; renderCotacoes(); }); }
+function baseUrl(){ return location.href.replace(/index\.html.*$/,'').replace(/\?.*$/,''); }
+async function gerarLinkFornecedor(cotId, fornecedorId){
+  const cot=cotacoes[cotId], f=fornecedores[fornecedorId]; if(!cot||!f)return;
+  const tk=token(); const linkData={cotacaoId:cotId,fornecedorId,fornecedorNome:f.nome,token:tk,veiculo:cot.veiculo,itens:cot.itens,criadoEm:new Date().toISOString(),status:'aberta'};
+  await db.ref(`linksFornecedor/${cotId}/${fornecedorId}/${tk}`).set(linkData);
+  await db.ref(`cotacoes/${cotId}/fornecedores/${fornecedorId}`).set({fornecedorId,nome:f.nome,whatsapp:f.whatsapp,token:tk,link:vendorUrl(cotId,fornecedorId,tk),criadoEm:new Date().toISOString()});
+  alert('Link gerado para '+f.nome);
+}
+function vendorUrl(cotId,fid,tk){ return `${baseUrl()}fornecedor.html?c=${encodeURIComponent(cotId)}&f=${encodeURIComponent(fid)}&t=${encodeURIComponent(tk)}&cfg=${encodeURIComponent(cfgToB64())}`; }
+function msgWhats(cotId, fornecedorId, tk){ const cot=cotacoes[cotId], f=fornecedores[fornecedorId]; const v=cot.veiculo||{}; const link=vendorUrl(cotId,fornecedorId,tk); return `${f.nome}, cotação #${cot.numero} - ${v.modelo||''} ${v.placa||''}\n\nSão ${cot.totalItens||cot.itens.length} peças para cotar.\nPreencha pelo link:\n${link}\n\nPode responder parcial. Campos: marca, cód. marca, descrição, preço e disponibilidade.`; }
+function abrirWhats(cotId, fornecedorId, tk){ const f=fornecedores[fornecedorId]; window.open(`https://wa.me/${f.whatsapp}?text=${encodeURIComponent(msgWhats(cotId,fornecedorId,tk))}`,'_blank'); }
+function renderCotacoes(){
+  const arr=Object.values(cotacoes).sort((a,b)=>(b.criadaEm||'').localeCompare(a.criadaEm||''));
+  if(!arr.length){ cotacoesBox.innerHTML='<p class="muted">Nenhuma cotação ainda.</p>'; return; }
+  cotacoesBox.innerHTML=arr.map(c=>{
+    const fs=c.fornecedores||{}; const respostasBox=`respostas_${c.id}`;
+    setTimeout(()=>listenRespostas(c.id),50);
+    return `<div class="cotacaoBox"><h3>#${c.numero} — ${c.veiculo?.modelo||''} ${c.veiculo?.placa||''}</h3>
+      <div class="stat"><div><span class="muted">Peças</span><br><b>${c.totalItens||c.itens.length}</b></div><div><span class="muted">Valor real interno</span><br><b>${moeda(c.totalPecasPlanilha)}</b></div><div><span class="muted">Status</span><br><b>${c.status||'aberta'}</b></div></div>
+      <h3>Gerar link para fornecedor</h3><div class="row"><select id="sel_${c.id}">${Object.values(fornecedores).map(f=>`<option value="${f.id}">${f.nome}</option>`).join('')}</select><button onclick="gerarLinkFornecedor('${c.id}',document.getElementById('sel_${c.id}').value)">Gerar link</button></div>
+      <h3>Links gerados</h3>${Object.values(fs).length?Object.values(fs).map(f=>`<div class="quote"><b>${f.nome}</b><br><span class="copy">${f.link}</span><br><button class="blue" onclick="abrirWhats('${c.id}','${f.fornecedorId}','${f.token}')">Enviar convite no WhatsApp</button></div>`).join(''):'<p class="muted">Nenhum link gerado ainda.</p>'}
+      <details><summary>Ver peças importadas</summary><div class="tableWrap"><table><tr><th>N</th><th>Código original</th><th>Descrição</th><th>Qtd</th><th>Unit. planilha</th><th>Desc.</th><th>Total real</th><th>Tipo</th></tr>${(c.itens||[]).map(i=>`<tr><td>${i.n}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}</td><td>${i.quantidade}</td><td>${moeda(i.valorUnitarioPlanilha)}</td><td>${Math.round((i.descontoPlanilha||0)*100)}%</td><td>${moeda(i.totalPlanilha)}</td><td><span class="pill">${i.tipo}</span></td></tr>`).join('')}</table></div></details>
+      <h3>Resultado em tempo real</h3><div id="${respostasBox}" class="muted">Aguardando respostas...</div>
+    </div>`;
+  }).join('');
+}
+function listenRespostas(cotId){ db.ref('respostas/'+cotId).on('value',snap=>renderResultados(cotId,snap.val()||{})); }
+function flattenRespostas(data){ const out=[]; Object.values(data||{}).forEach(byToken=>Object.values(byToken||{}).forEach(resp=>{ const itens=resp.itens||{}; Object.values(itens).forEach(item=>out.push({...item,fornecedorNome:resp.fornecedorNome||item.fornecedorNome||'',fornecedorId:resp.fornecedorId||item.fornecedorId||''})); })); return out; }
+function renderResultados(cotId,data){ const c=cotacoes[cotId]; const el=document.getElementById('respostas_'+cotId); if(!c||!el)return; const resps=flattenRespostas(data); const byItem={}; resps.forEach(r=>{ if(!byItem[r.itemId])byItem[r.itemId]=[]; if(r.temDisponivel!==false && Number(r.precoUnitario)>0) byItem[r.itemId].push(r); });
+  const respondidas=new Set(resps.map(r=>r.itemId)).size; const linhas=(c.itens||[]).map(i=>{ const arr=(byItem[i.id]||[]).sort((a,b)=>Number(a.precoUnitario)-Number(b.precoUnitario)); const best=arr[0]; return `<tr class="${best?'best':''}"><td>${i.n}</td><td>${i.codigoOriginal}<br><span class="muted">${i.descricaoOriginal}</span></td><td>${best?`<b>${best.fornecedorNome}</b><br>${best.marca||''} ${best.codigoMarca?(' / '+best.codigoMarca):''}<br>${best.descricaoFornecedor||''}<br><b>${moeda(Number(best.precoUnitario))}</b> x ${i.quantidade} = <b>${moeda(Number(best.precoUnitario)*Number(i.quantidade||1))}</b><br>${best.disponibilidade||''}`:'<span class="warnText">sem resposta</span>'}</td><td>${arr.map(r=>`${r.fornecedorNome}: ${moeda(Number(r.precoUnitario))} | ${r.marca||'-'} | ${r.codigoMarca||'-'} | ${r.disponibilidade||'-'}`).join('<br>')||'-'}</td></tr>`; }).join('');
+  el.innerHTML=`<p class="ok"><b>${respondidas}</b> de <b>${c.itens.length}</b> peças têm alguma resposta salva.</p><div class="tableWrap"><table><tr><th>N</th><th>Peça</th><th>Melhor preço</th><th>Todas as respostas válidas</th></tr>${linhas}</table></div>`;
+}
+initFirebase();
+</script>
+</body>
+</html>
