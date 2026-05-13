@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "fornecedores": { ".read": true, ".write": true },
+    "cotacoes": { ".read": true, ".write": true },
+    "ordensCompra": { ".read": true, ".write": true },
+    "whatsappQueue": { ".read": true, ".write": true },
+    ".read": false,
+    ".write": false
+  }
+}

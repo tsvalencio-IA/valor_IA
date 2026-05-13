@@ -3,344 +3,161 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>valor_IA — Sistema de Cotação por Link</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <title>valor_IA — Sistema de Cotação</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="./firebase-config.js"></script>
   <style>
     :root{
-      --bg:#070b18;--panel:#0f172a;--panel2:#111c34;--line:#26344f;--text:#f8fafc;--muted:#a8b3c7;
-      --green:#22c55e;--blue:#38bdf8;--red:#ef4444;--yellow:#fde047;--orange:#fb923c;--white:#fff;
+      --bg:#f4f7fb; --panel:#ffffff; --panel2:#f8fafc; --text:#1e293b; --muted:#64748b; --line:#dbe4ef;
+      --accent:#2563eb; --accent2:#0f766e; --green:#16a34a; --red:#dc2626; --orange:#d97706; --soft:#e8f0fe;
+      --shadow:0 10px 24px rgba(15,23,42,.07); --radius:18px;
     }
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(140deg,#040816,#0b1b3b 65%,#071426);color:var(--text);font-family:Arial,Helvetica,sans-serif;}
-    header{padding:18px 18px 14px;border-bottom:1px solid var(--line);background:rgba(2,6,23,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(8px)}
-    header h1{margin:0;font-size:24px;letter-spacing:.2px} header p{margin:6px 0 0;color:var(--muted)}
-    .wrap{max-width:1320px;margin:0 auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.card{background:rgba(15,23,42,.94);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 15px 40px rgba(0,0,0,.28)}
-    h2{font-size:18px;margin:0 0 12px} h3{margin:6px 0 10px}.muted{color:var(--muted)} small{color:var(--muted)}
-    label{display:block;margin:10px 0 5px;color:#cbd5e1;font-size:13px} input,select,textarea{width:100%;border:1px solid var(--line);background:#060b18;color:var(--text);border-radius:11px;padding:10px;outline:none} textarea{min-height:88px;resize:vertical}
-    button{border:0;border-radius:11px;padding:10px 13px;margin:4px 4px 4px 0;font-weight:700;cursor:pointer;background:var(--green);color:#052e16} button.blue{background:var(--blue);color:#082f49} button.gray{background:#475569;color:#fff} button.red{background:var(--red);color:#fff} button.orange{background:var(--orange);color:#431407} button:disabled{opacity:.55;cursor:not-allowed}
-    table{width:100%;border-collapse:collapse;margin-top:10px;border-radius:13px;overflow:hidden;background:#061022} th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px} th{background:#020817;color:#dbeafe} tr:hover td{background:rgba(56,189,248,.05)}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;margin:2px;color:#e2e8f0}.ok{color:#86efac}.warn{color:#fde68a}.bad{color:#fca5a5}.hide{display:none!important}
-    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}.kpi{background:#061022;border:1px solid var(--line);border-radius:14px;padding:12px}.kpi b{display:block;font-size:21px;margin-bottom:3px}.list{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:10px;background:#061022}.quote{border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;background:#060b18}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.copybox{font-family:Consolas,monospace;font-size:12px;background:#020817;border:1px solid var(--line);border-radius:12px;padding:10px;white-space:pre-wrap;word-break:break-word}.footer{padding:22px;text-align:center;color:#8fa3c5}.statusbar{position:fixed;right:14px;bottom:14px;background:#020817;border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 15px 40px rgba(0,0,0,.35);z-index:10;max-width:360px}.mono{font-family:Consolas,monospace}.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:800px){.split{grid-template-columns:1fr} header h1{font-size:20px}}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.35}
+    header{background:#fff;border-bottom:1px solid var(--line);padding:18px 22px;position:sticky;top:0;z-index:20;box-shadow:0 3px 18px rgba(15,23,42,.05)}
+    h1{font-size:23px;margin:0;font-weight:800;letter-spacing:-.3px}.sub{color:var(--muted);margin-top:4px}.wrap{max-width:1280px;margin:0 auto;padding:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(315px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+    h2{font-size:18px;margin:0 0 12px} h3{font-size:16px;margin:0 0 8px} label{display:block;color:var(--muted);font-size:13px;margin:9px 0 5px}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 11px;color:var(--text);outline:none} textarea{min-height:92px} input:focus,textarea:focus,select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px #dbeafe}
+    button{border:0;border-radius:12px;padding:10px 13px;background:var(--accent);color:white;font-weight:700;cursor:pointer;margin:4px 4px 4px 0} button:hover{filter:brightness(.97)}
+    .b2{background:var(--accent2)}.green{background:var(--green)}.red{background:var(--red)}.gray{background:#64748b}.orange{background:var(--orange)}.light{background:var(--soft);color:#1e40af}
+    .muted{color:var(--muted)}.mini{font-size:12px;color:var(--muted)}.pill{display:inline-block;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:4px 8px;margin:2px;font-size:12px}.ok{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--orange)}
+    table{width:100%;border-collapse:collapse;margin-top:8px;background:white;border-radius:14px;overflow:hidden} th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px} th{background:#f1f5f9;color:#334155;font-weight:800}.scroll{overflow:auto;max-height:430px;border:1px solid var(--line);border-radius:14px}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}.kpi{background:linear-gradient(180deg,#fff,#f8fafc);border:1px solid var(--line);border-radius:16px;padding:12px}.kpi b{display:block;font-size:22px;margin-top:4px}.quote{border:1px solid var(--line);border-radius:18px;background:#fff;padding:14px;margin:14px 0}.hidden{display:none}.softbox{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:14px;padding:12px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab{background:#e2e8f0;color:#334155}.tab.active{background:#1e40af;color:#fff}.profitPos{color:#15803d;font-weight:800}.profitNeg{color:#b91c1c;font-weight:800}.right{text-align:right}.nowrap{white-space:nowrap} footer{text-align:center;color:#94a3b8;padding:28px}
   </style>
 </head>
 <body>
-  <header>
-    <h1>valor_IA — Sistema de Cotação por Link</h1>
-    <p>WhatsApp envia só o convite. Vendedor responde no formulário. Painel atualiza em tempo real.</p>
-  </header>
-  <div class="wrap">
-    <div id="firebaseError" class="card hide" style="border-color:#ef4444"><h2>Erro de Firebase</h2><p id="firebaseErrorText" class="bad"></p></div>
-
-    <div class="grid">
-      <section class="card">
-        <h2>1. Importar planilha de OS</h2>
-        <label>Número da cotação/OS</label>
-        <input id="quoteNumber" placeholder="Ex: I52203" />
-        <label>Planilha XLSX</label>
-        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
-        <div class="toolbar">
-          <button onclick="parseSpreadsheet()">Importar somente peças</button>
-          <button class="gray" onclick="clearPreview()">Limpar prévia</button>
-        </div>
-        <p class="muted">O importador considera somente linhas que começam com <b>PEÇA / CÓD.</b> e ignora <b>SERVIÇO</b>.</p>
-      </section>
-
-      <section class="card">
-        <h2>2. Cadastrar fornecedor</h2>
-        <label>Nome</label>
-        <input id="supplierName" placeholder="Ex: FURLAN AUTO PEÇAS" />
-        <label>WhatsApp com DDD</label>
-        <input id="supplierPhone" placeholder="Ex: 17997631210 ou 5517997631210" />
-        <label>Tipos que atende</label>
-        <input id="supplierTypes" placeholder="Ex: todas as peças ou motor, freio, eletrica" />
-        <button onclick="saveSupplier()">Salvar fornecedor</button>
-        <p class="muted">Para cotar tudo, use: <b>todas as peças</b>.</p>
-      </section>
-
-      <section class="card">
-        <h2>3. Criar cotação no Realtime Database</h2>
-        <p class="muted">Depois de importar a planilha, confira a prévia e clique abaixo.</p>
-        <button class="blue" id="createQuoteBtn" onclick="createQuote()" disabled>Criar cotação online</button>
-        <div id="previewKpis" class="summary"></div>
-      </section>
-    </div>
-
-    <section id="previewSection" class="card hide" style="margin-top:14px">
-      <h2>Prévia da importação — somente peças</h2>
-      <div id="vehiclePreview" class="muted"></div>
-      <div id="piecesPreview"></div>
-    </section>
-
-    <section class="card" style="margin-top:14px">
-      <h2>Fornecedores cadastrados</h2>
-      <div id="suppliersBox">Carregando...</div>
-    </section>
-
-    <section class="card" style="margin-top:14px">
-      <div class="toolbar" style="justify-content:space-between">
-        <h2 style="margin:0">Cotações em tempo real</h2>
-        <button class="gray" onclick="loadQuotesOnce()">Atualizar</button>
-      </div>
-      <div id="quotesBox">Carregando...</div>
-    </section>
+<header>
+  <h1>valor_IA — Sistema de Cotação Inteligente</h1>
+  <div class="sub">GitHub Pages + Realtime Database + formulário do fornecedor + robô local opcional para envio automático no WhatsApp.</div>
+</header>
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('painel',this)">Painel</button>
+    <button class="tab" onclick="showTab('fornecedoresTab',this)">Fornecedores</button>
+    <button class="tab" onclick="showTab('importarTab',this)">Importar planilha</button>
+    <button class="tab" onclick="showTab('ordensTab',this)">Ordens de compra</button>
+    <button class="tab" onclick="showTab('roboTab',this)">Robô WhatsApp</button>
   </div>
-  <div class="footer">Powered by thIAguinho Soluções Digitais</div>
-  <div id="toast" class="statusbar hide"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getDatabase, ref, set, update, push, onValue, get, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js";
+  <section id="painel" class="tabPage">
+    <div class="kpis">
+      <div class="kpi"><span class="mini">Cotações online</span><b id="kCot">0</b></div>
+      <div class="kpi"><span class="mini">Fornecedores</span><b id="kForn">0</b></div>
+      <div class="kpi"><span class="mini">Ordens de compra</span><b id="kOC">0</b></div>
+      <div class="kpi"><span class="mini">Fila WhatsApp pendente</span><b id="kFila">0</b></div>
+    </div>
+    <div class="card">
+      <h2>Cotações em tempo real</h2>
+      <div id="cotacoesBox" class="muted">Carregando...</div>
+    </div>
+  </section>
 
-let app, db;
-let suppliers = {};
-let quotes = {};
-let responses = {};
-let currentPreview = null;
+  <section id="fornecedoresTab" class="tabPage hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>Cadastrar fornecedor</h2>
+        <label>Nome</label><input id="fornNome" placeholder="Ex: FURLAN AUTO PEÇAS">
+        <label>WhatsApp</label><input id="fornWhats" placeholder="Ex: 17997631210">
+        <label>Tipos que atende</label><input id="fornTipos" placeholder="todas as peças, motor, freio, lataria">
+        <button onclick="salvarFornecedor()">Salvar fornecedor</button>
+        <div class="mini">Use <b>todas as peças</b> quando quiser que ele receba a cotação completa.</div>
+      </div>
+      <div class="card"><h2>Lista de fornecedores</h2><div id="fornecedoresBox"></div></div>
+    </div>
+  </section>
 
-function showToast(msg, type='ok'){
-  const el=document.getElementById('toast');
-  el.className='statusbar';
-  el.innerHTML=`<b class="${type==='bad'?'bad':type==='warn'?'warn':'ok'}">${msg}</b>`;
-  setTimeout(()=>el.classList.add('hide'),4500);
-}
-function showFirebaseError(err){
-  document.getElementById('firebaseError').classList.remove('hide');
-  document.getElementById('firebaseErrorText').textContent = err?.message || String(err);
-}
-function initFirebase(){
-  try{
-    app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    bindRealtime();
-  }catch(err){ showFirebaseError(err); }
-}
-function bindRealtime(){
-  onValue(ref(db,'suppliers'), snap=>{ suppliers=snap.val()||{}; renderSuppliers(); renderQuotes(); }, err=>showFirebaseError(err));
-  onValue(ref(db,'cotacoes'), snap=>{ quotes=snap.val()||{}; renderQuotes(); }, err=>showFirebaseError(err));
-  onValue(ref(db,'respostas'), snap=>{ responses=snap.val()||{}; renderQuotes(); }, err=>showFirebaseError(err));
-}
+  <section id="importarTab" class="tabPage hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>Importar planilha de OS</h2>
+        <label>Número da cotação / OS</label><input id="numeroCotacao" placeholder="Ex: I52203">
+        <label>Planilha XLSX</label><input id="filePlanilha" type="file" accept=".xlsx,.xls,.csv">
+        <label>Preço de venda usado para lucro</label>
+        <select id="modoVenda">
+          <option value="liquido">Usar valor líquido da planilha como preço vendido</option>
+          <option value="bruto">Usar valor bruto unitário da planilha</option>
+        </select>
+        <button onclick="importarPlanilha()">Importar somente PEÇAS</button>
+        <button class="green" onclick="criarCotacaoOnline()">Criar cotação online</button>
+        <div class="mini">A importação aceita somente linhas que começam como <b>PEÇA / CÓD.</b> e ignora serviços.</div>
+      </div>
+      <div class="card">
+        <h2>Prévia da importação</h2>
+        <div id="previewInfo" class="muted">Nenhuma planilha importada nesta tela.</div>
+        <div id="previewTable" class="scroll hidden"></div>
+      </div>
+    </div>
+  </section>
 
-function norm(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
-function nlow(v){return norm(v).toLowerCase();}
-function money(n){const x=Number(n);return Number.isFinite(x)?x.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'-';}
-function toNumber(v){
-  if(v===null||v===undefined||v==='') return 0;
-  if(typeof v==='number') return Number.isFinite(v)?v:0;
-  let s=String(v).replace(/[^\d,.-]/g,'');
-  if(s.includes(',')&&s.includes('.')) s=s.replace(/\./g,'').replace(',','.');
-  else if(s.includes(',')) s=s.replace(',','.');
-  const n=Number(s); return Number.isFinite(n)?n:0;
-}
-function uid(prefix='id'){return prefix+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);}
-function extractAfter(label, text){
-  const re = new RegExp(label+'\\s*:\\s*([^\\n|]+)', 'i');
-  const m = String(text||'').match(re);
-  return m ? m[1].trim() : '';
-}
-function extractCode(cell){
-  const txt=String(cell||'');
-  const m=txt.match(/C[ÓO]D\.?\s*:\s*([^\n\r]+)/i);
-  return m ? m[1].trim() : '';
-}
-function classify(desc){
-  const d=nlow(desc);
-  const groups=[
-    ['arrefecimento',['radiador','ventoinha','aditivo','bomba de agua','bomba dagua','reservatorio','mangueira de agua','agua']],
-    ['eletrica',['bateria','sensor','resistor','lampada','lanterna','farol','modulo','chicote','fusivel','rele','comando da seta']],
-    ['motor',['motor','coxim','correia','filtro','oleo','vela','bico','injetor','junta','cabecote','coletor','retentor']],
-    ['suspensao',['amortecedor','bandeja','bucha','pivo','terminal','bieleta','mola','barra estabilizadora','braco oscilante']],
-    ['freio',['pastilha','disco do freio','freio','sapata','cilindro']],
-    ['lataria',['parachoque','para-choque','grade','capo','porta','paralama','retrovisor','painel','tapete','assento','banco']]
-  ];
-  for(const [tipo, words] of groups){ if(words.some(w=>d.includes(w))) return tipo; }
-  return 'geral';
-}
-function normalizePhone(phone){
-  let d=String(phone||'').replace(/\D/g,'');
-  if(d.length===10 || d.length===11) d='55'+d;
-  return d;
-}
-function typeList(str){
-  return String(str||'').split(',').map(x=>nlow(x)).filter(Boolean);
-}
-function supplierCoversPiece(supplier, piece){
-  const types=(supplier.tipos||[]).map(nlow);
-  if(types.length===0) return true;
-  if(types.some(t=>t.includes('todas')||t.includes('todos')||t==='geral'||t==='tudo')) return true;
-  return types.includes(nlow(piece.tipo));
-}
-function getPiecesArray(q){return Object.values(q.pecas||{}).sort((a,b)=>(a.ordem||0)-(b.ordem||0));}
-function getFilteredPieces(q, supplier){return getPiecesArray(q).filter(p=>supplierCoversPiece(supplier,p));}
+  <section id="ordensTab" class="tabPage hidden">
+    <div class="card">
+      <h2>Importar planilha de ordem/cotação gerada pelo sistema</h2>
+      <input type="file" id="fileImportOC" accept=".xlsx,.xls,.csv">
+      <button onclick="importarOrdemCompraPlanilha()">Importar ordem/planilha</button>
+      <div class="mini">Use para trazer de volta uma planilha exportada por este sistema.</div>
+    </div>
+    <div class="card"><h2>Ordens de compra</h2><div id="ocsBox" class="muted">Carregando...</div></div>
+  </section>
 
-async function parseSpreadsheet(){
-  const file=document.getElementById('fileInput').files[0];
-  if(!file){showToast('Escolha uma planilha XLSX.', 'warn');return;}
-  try{
-    const data=await file.arrayBuffer();
-    const wb=XLSX.read(data,{type:'array'});
-    let rows=[];
-    wb.SheetNames.forEach(name=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''})); });
-    const allText=rows.flat().map(x=>String(x||'')).join('\n');
-    const vehicle={
-      marca: extractAfter('MARCA', allText),
-      modelo: extractAfter('MODELO', allText),
-      ano: extractAfter('ANO', allText),
-      placa: extractAfter('PLACA', allText),
-      chassi: extractAfter('CHASSIS?', allText),
-      km: extractAfter('KM', allText),
-      prefixo: extractAfter('PREFIXO', allText),
-      patrimonio: extractAfter('PATRIMONIO', allText)
-    };
-    const pieces=[];
-    let ignoredServices=0;
-    for(let r=0;r<rows.length;r++){
-      const row=rows[r]||[];
-      const itemCell=String(row[1]||'').trim();
-      const itemNorm=nlow(itemCell);
-      if(itemNorm.startsWith('servico')) { ignoredServices++; continue; }
-      if(!(itemNorm.startsWith('peca') && itemNorm.includes('cod'))) continue;
-      const code=extractCode(itemCell) || 'sem oem';
-      const desc=String(row[3]||'').trim();
-      if(!desc) continue;
-      const qtd=toNumber(row[4]) || 1;
-      const unit=toNumber(row[5]);
-      const desconto=toNumber(row[6]);
-      const total=toNumber(row[7]);
-      const id='p'+String(pieces.length+1).padStart(3,'0');
-      pieces.push({
-        id, ordem:pieces.length+1, linhaPlanilha:r+1,
-        codigoOriginal:code, descricaoOriginal:desc, quantidade:qtd,
-        valorUnitarioPlanilha:unit, descontoPlanilha:desconto, totalLiquidoPlanilha:total,
-        tipo:classify(desc)
-      });
-    }
-    if(!pieces.length) throw new Error('Nenhuma PEÇA encontrada. Verifique se a planilha usa o padrão PEÇA / CÓD.');
-    const numero = document.getElementById('quoteNumber').value.trim() || vehicle.prefixo || file.name.replace(/\.[^.]+$/,'');
-    currentPreview={ numero, arquivo:file.name, vehicle, pieces, ignoredServices, createdAt:new Date().toISOString() };
-    document.getElementById('quoteNumber').value=numero;
-    document.getElementById('createQuoteBtn').disabled=false;
-    renderPreview();
-    showToast(`${pieces.length} peças importadas. ${ignoredServices} serviços ignorados.`);
-  }catch(err){showToast(err.message,'bad');console.error(err);}
-}
-function clearPreview(){ currentPreview=null; document.getElementById('createQuoteBtn').disabled=true; document.getElementById('previewSection').classList.add('hide'); document.getElementById('previewKpis').innerHTML=''; }
-function renderPreview(){
-  const p=currentPreview; if(!p) return;
-  const total=p.pieces.reduce((s,x)=>s+(Number(x.totalLiquidoPlanilha)||0),0);
-  document.getElementById('previewKpis').innerHTML=`
-    <div class="kpi"><b>${p.pieces.length}</b><small>peças importadas</small></div>
-    <div class="kpi"><b>${p.ignoredServices}</b><small>serviços ignorados</small></div>
-    <div class="kpi"><b>${money(total)}</b><small>valor líquido peças</small></div>`;
-  document.getElementById('previewSection').classList.remove('hide');
-  document.getElementById('vehiclePreview').innerHTML=`<b>OS:</b> ${p.numero} | <b>Veículo:</b> ${p.vehicle.marca||'-'} ${p.vehicle.modelo||'-'} | <b>Placa:</b> ${p.vehicle.placa||'-'} | <b>Chassi:</b> ${p.vehicle.chassi||'-'} | <b>KM:</b> ${p.vehicle.km||'-'}`;
-  document.getElementById('piecesPreview').innerHTML=`<div class="list"><table><thead><tr><th>#</th><th>Código original</th><th>Descrição</th><th>Qtd</th><th>Tipo</th><th>Unit. planilha</th><th>Desc.</th><th>Total líquido</th><th>Linha</th></tr></thead><tbody>${p.pieces.map(x=>`<tr><td>${x.ordem}</td><td class="mono">${x.codigoOriginal}</td><td>${x.descricaoOriginal}</td><td>${x.quantidade}</td><td><span class="pill">${x.tipo}</span></td><td>${money(x.valorUnitarioPlanilha)}</td><td>${(x.descontoPlanilha*100).toFixed(0)}%</td><td>${money(x.totalLiquidoPlanilha)}</td><td>${x.linhaPlanilha}</td></tr>`).join('')}</tbody></table></div>`;
-}
-async function createQuote(){
-  if(!currentPreview){showToast('Importe uma planilha primeiro.','warn');return;}
-  try{
-    const id = currentPreview.numero.replace(/[^a-zA-Z0-9_-]/g,'_')+'_'+Date.now().toString(36);
-    const piecesObj={};
-    currentPreview.pieces.forEach(p=>piecesObj[p.id]=p);
-    const quote={
-      id, numero:currentPreview.numero, arquivo:currentPreview.arquivo, veiculo:currentPreview.vehicle,
-      pecas:piecesObj, totalPecas:currentPreview.pieces.length, totalLiquidoPecas:currentPreview.pieces.reduce((s,x)=>s+(Number(x.totalLiquidoPlanilha)||0),0),
-      servicosIgnorados:currentPreview.ignoredServices, status:'aberta', criadaEm:new Date().toISOString()
-    };
-    const publicPieces={};
-    currentPreview.pieces.forEach(p=>publicPieces[p.id]={ id:p.id, ordem:p.ordem, codigoOriginal:p.codigoOriginal, descricaoOriginal:p.descricaoOriginal, quantidade:p.quantidade, tipo:p.tipo });
-    const publicQuote={ id, numero:quote.numero, veiculo:quote.veiculo, pecas:publicPieces, status:'aberta', criadaEm:quote.criadaEm };
-    await set(ref(db,`cotacoes/${id}`), quote);
-    await set(ref(db,`publicCotacoes/${id}`), publicQuote);
-    clearPreview();
-    showToast('Cotação criada online. Agora gere os links dos fornecedores.');
-  }catch(err){showToast(err.message,'bad');console.error(err);}
-}
-async function saveSupplier(){
-  const nome=document.getElementById('supplierName').value.trim();
-  const whatsapp=normalizePhone(document.getElementById('supplierPhone').value);
-  const tipos=typeList(document.getElementById('supplierTypes').value||'todas as peças');
-  if(!nome || !whatsapp){showToast('Preencha nome e WhatsApp.','warn');return;}
-  try{
-    const id=uid('forn');
-    await set(ref(db,`suppliers/${id}`), {id,nome,whatsapp,tipos,ativo:true,criadoEm:new Date().toISOString()});
-    document.getElementById('supplierName').value=''; document.getElementById('supplierPhone').value=''; document.getElementById('supplierTypes').value='';
-    showToast('Fornecedor salvo.');
-  }catch(err){showToast(err.message,'bad');}
-}
-async function deleteSupplier(id){ if(!confirm('Remover fornecedor?')) return; await remove(ref(db,`suppliers/${id}`)); showToast('Fornecedor removido.'); }
-function renderSuppliers(){
-  const arr=Object.values(suppliers).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  const el=document.getElementById('suppliersBox');
-  if(!arr.length){el.innerHTML='<p class="muted">Nenhum fornecedor cadastrado ainda.</p>';return;}
-  el.innerHTML=`<table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Tipos</th><th>Ação</th></tr></thead><tbody>${arr.map(s=>`<tr><td>${s.nome}</td><td class="mono">${s.whatsapp}</td><td>${(s.tipos||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</td><td><button class="red" onclick="deleteSupplier('${s.id}')">Remover</button></td></tr>`).join('')}</tbody></table>`;
-}
-function supplierLink(quoteId, supplier){
-  const token = supplier.token || '';
-  const u = new URL('./fornecedor.html', window.location.href);
-  u.searchParams.set('cotacao', quoteId); u.searchParams.set('fornecedor', supplier.id); u.searchParams.set('token', token);
-  return u.href;
-}
-async function ensureSupplierOnQuote(qid, sid){
-  const s=suppliers[sid]; if(!s) throw new Error('Fornecedor não encontrado.');
-  const token = (quotes[qid]?.fornecedores?.[sid]?.token) || Math.random().toString(36).slice(2)+Date.now().toString(36);
-  const payload={ id:s.id, nome:s.nome, whatsapp:s.whatsapp, tipos:s.tipos||[], token, vinculadoEm:new Date().toISOString() };
-  await update(ref(db), { [`cotacoes/${qid}/fornecedores/${sid}`]: payload, [`publicCotacoes/${qid}/fornecedores/${sid}`]: {id:s.id,nome:s.nome,tipos:s.tipos||[]} });
-  return payload;
-}
-async function generateInvite(qid, sid){
-  try{
-    const q=quotes[qid], s0=suppliers[sid];
-    const s=await ensureSupplierOnQuote(qid,sid);
-    const pieces=getFilteredPieces(q,s0);
-    const link=supplierLink(qid,s);
-    const msg=`${s.nome}, cotação #${q.numero} - ${q.veiculo?.modelo||''} ${q.veiculo?.placa||''}\n\nSão ${pieces.length} peça(s) para cotar.\nPreencha pelo link:\n${link}\n\nPode salvar parcial. Campos: marca, cód. marca, descrição, preço e disponibilidade.`;
-    const wa=`https://wa.me/${s.whatsapp}?text=${encodeURIComponent(msg)}`;
-    const box=document.getElementById(`invite_${qid}_${sid}`);
-    box.innerHTML=`<div class="copybox">${msg}</div><div class="toolbar"><button onclick="copyText(${JSON.stringify(msg).replace(/"/g,'&quot;')})">Copiar mensagem</button><a href="${wa}" target="_blank"><button class="blue">Abrir WhatsApp</button></a><a href="${link}" target="_blank"><button class="gray">Abrir formulário</button></a></div>`;
-  }catch(err){showToast(err.message,'bad');}
-}
-function getQuoteResponses(qid){return responses[qid]||{};}
-function responsesForPiece(qid, pid){
-  const r=getQuoteResponses(qid); const out=[];
-  Object.values(r).forEach(supResp=>{ if(supResp && supResp[pid]) out.push(supResp[pid]); });
-  return out;
-}
-function bestForPiece(qid, p){
-  const rs=responsesForPiece(qid,p.id).filter(r=>r.temDisponivel!==false && Number(r.precoUnitario)>0);
-  rs.sort((a,b)=>Number(a.precoUnitario)-Number(b.precoUnitario));
-  return {best:rs[0]||null, all:rs};
-}
-function renderQuotes(){
-  const el=document.getElementById('quotesBox');
-  const arr=Object.values(quotes).sort((a,b)=>String(b.criadaEm||'').localeCompare(String(a.criadaEm||'')));
-  if(!arr.length){el.innerHTML='<p class="muted">Nenhuma cotação criada ainda.</p>';return;}
-  const supplierArr=Object.values(suppliers).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  el.innerHTML=arr.map(q=>renderQuote(q,supplierArr)).join('');
-}
-function renderQuote(q,supplierArr){
-  const pieces=getPiecesArray(q); const total=pieces.length;
-  let withResp=0, withWinner=0;
-  pieces.forEach(p=>{const b=bestForPiece(q.id,p); if(responsesForPiece(q.id,p.id).length) withResp++; if(b.best) withWinner++;});
-  return `<div class="quote">
-    <div class="toolbar" style="justify-content:space-between"><h3>Cotação #${q.numero}</h3><span class="pill">${q.status||'aberta'}</span></div>
-    <p class="muted"><b>Veículo:</b> ${q.veiculo?.marca||''} ${q.veiculo?.modelo||''} | <b>Placa:</b> ${q.veiculo?.placa||'-'} | <b>Chassi:</b> ${q.veiculo?.chassi||'-'} | <b>Arquivo:</b> ${q.arquivo||'-'}</p>
-    <div class="summary"><div class="kpi"><b>${total}</b><small>peças</small></div><div class="kpi"><b>${withResp}</b><small>peças com resposta</small></div><div class="kpi"><b>${withWinner}</b><small>peças com preço válido</small></div><div class="kpi"><b>${money(q.totalLiquidoPecas)}</b><small>valor interno planilha</small></div></div>
-    <details open><summary><b>Gerar links para fornecedores</b></summary>${supplierArr.length?supplierArr.map(s=>{const count=getFilteredPieces(q,s).length; return `<div style="border-top:1px solid var(--line);padding:10px 0"><b>${s.nome}</b> <span class="pill">${count} peça(s)</span><button class="blue" onclick="generateInvite('${q.id}','${s.id}')">Gerar convite WhatsApp</button><div id="invite_${q.id}_${s.id}"></div></div>`}).join(''):'<p class="muted">Cadastre fornecedores primeiro.</p>'}</details>
-    <details open><summary><b>Melhores opções por peça</b></summary>${renderWinnersTable(q,pieces)}</details>
-    <details><summary>Ver todas as peças e valores internos da planilha</summary>${renderInternalPieces(q,pieces)}</details>
-  </div>`;
-}
-function renderWinnersTable(q,pieces){
-  return `<div class="list"><table><thead><tr><th>#</th><th>Código original</th><th>Peça</th><th>Qtd</th><th>Melhor opção</th><th>Todas as respostas</th></tr></thead><tbody>${pieces.map(p=>{const b=bestForPiece(q.id,p); return `<tr><td>${p.ordem}</td><td class="mono">${p.codigoOriginal}</td><td>${p.descricaoOriginal}</td><td>${p.quantidade}</td><td>${b.best?`<b class="ok">${b.best.fornecedorNome||b.best.fornecedorId}</b><br>${b.best.marca||'-'} ${b.best.codigoMarca?`/ ${b.best.codigoMarca}`:''}<br><b>${money(b.best.precoUnitario)}</b> un. | total ${money(Number(b.best.precoUnitario)*Number(p.quantidade||1))}<br>${b.best.disponibilidade||'-'}<br><small>${b.best.descricaoFornecedor||''}</small>`:`<span class="warn">sem preço válido</span>`}</td><td>${b.all.length?b.all.map(r=>`${r.fornecedorNome||r.fornecedorId}: ${money(r.precoUnitario)} | ${r.marca||'-'} | ${r.disponibilidade||'-'}`).join('<br>'):'-'}</td></tr>`}).join('')}</tbody></table></div>`;
-}
-function renderInternalPieces(q,pieces){
-  return `<div class="list"><table><thead><tr><th>#</th><th>Cód.</th><th>Descrição</th><th>Tipo</th><th>Qtd</th><th>Unit. planilha</th><th>Desc.</th><th>Total líquido</th></tr></thead><tbody>${pieces.map(p=>`<tr><td>${p.ordem}</td><td class="mono">${p.codigoOriginal}</td><td>${p.descricaoOriginal}</td><td><span class="pill">${p.tipo}</span></td><td>${p.quantidade}</td><td>${money(p.valorUnitarioPlanilha)}</td><td>${((Number(p.descontoPlanilha)||0)*100).toFixed(0)}%</td><td>${money(p.totalLiquidoPlanilha)}</td></tr>`).join('')}</tbody></table></div>`;
-}
-async function loadQuotesOnce(){ const s=await get(ref(db,'cotacoes')); quotes=s.val()||{}; renderQuotes(); showToast('Atualizado.'); }
-function copyText(text){ navigator.clipboard.writeText(text).then(()=>showToast('Copiado.')).catch(()=>prompt('Copie o texto:', text)); }
-
-window.parseSpreadsheet=parseSpreadsheet; window.clearPreview=clearPreview; window.createQuote=createQuote; window.saveSupplier=saveSupplier; window.deleteSupplier=deleteSupplier; window.generateInvite=generateInvite; window.loadQuotesOnce=loadQuotesOnce; window.copyText=copyText;
-initFirebase();
+  <section id="roboTab" class="tabPage hidden">
+    <div class="card">
+      <h2>Robô local de WhatsApp</h2>
+      <p>O robô é opcional e fica no computador. Ele não calcula cotação; ele só envia automaticamente os convites que você colocar na fila.</p>
+      <div class="softbox">
+        <b>Como usar:</b><br>
+        1. Abra a pasta <b>robo-whatsapp</b> do ZIP.<br>
+        2. Clique em <b>CLIQUE_AQUI_INSTALAR_E_ABRIR_ROBO.bat</b>.<br>
+        3. Escaneie o QR Code.<br>
+        4. Volte ao painel e clique em <b>Enviar convite com robô</b> na cotação.
+      </div>
+      <p class="mini">Use apenas com fornecedores cadastrados e baixo volume operacional. O robô possui limite local de 100 mensagens por dia.</p>
+      <div id="filaBox"></div>
+    </div>
+  </section>
+</div>
+<footer>Powered by thIAguinho Soluções Digitais</footer>
+<script>
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let fornecedores={}, cotacoes={}, ordensCompra={}, fila={}, imported=null;
+const money = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num = v => { if(v==null) return 0; let s=String(v).trim().replace(/[^0-9,.-]/g,''); if(s.includes(',')&&s.includes('.')) s=s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s=s.replace(',','.'); const n=Number(s); return isFinite(n)?n:0; };
+const norm = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+const safeId = s => String(s||'id').replace(/[^a-zA-Z0-9_-]/g,'_');
+function showTab(id,btn){ document.querySelectorAll('.tabPage').forEach(x=>x.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); }
+function onlyDigits(v){return String(v||'').replace(/\D/g,'')}
+function normalizePhone(v){let d=onlyDigits(v); if((d.length===10||d.length===11)&&!d.startsWith('55')) d='55'+d; return d}
+function tipoPeca(desc){ const d=norm(desc); const rules=[['freio',['FREIO','PASTILHA','DISCO']],['lataria',['FAROL','LANTERNA','PARACHOQUE','PARA-CHOQUE','GRADE','CAPO','BANCO','ASSENTO','TAPETE']],['arrefecimento',['RADIADOR','ADITIVO','AGUA','BOMBA D','VENTOINHA']],['suspensao',['AMORTECEDOR','BARRA','BUCHA','TERMINAL','BRAÇO','BRACO','ROLAMENTO','SEMIEIXO']],['eletrica',['BATERIA','SENSOR','COMANDO','LIMPADOR','PALHETA']],['motor',['VELA','COXIM','CORREIA','COLETOR','ESCAPE','CAMBIO','RETENTOR']]]; for(const [t,ps] of rules){ if(ps.some(p=>d.includes(p))) return t;} return 'geral'; }
+function extractCode(cell){ const m=String(cell||'').match(/C[OÓ]D\.?\s*:\s*([^\n\r]+)/i); return m?m[1].trim():''; }
+function extractVehicle(rows){ const meta={marca:'',modelo:'',ano:'',placa:'',chassi:'',km:'',prefixo:''}; rows.forEach(r=>r.forEach(c=>{ const s=String(c||'').trim(); const pairs=[['marca','MARCA'],['modelo','MODELO'],['ano','ANO'],['placa','PLACA'],['chassi','CHASSIS'],['chassi','CHASSI'],['km','KM'],['prefixo','PREFIXO']]; pairs.forEach(([key,label])=>{ const re=new RegExp(label+'\\s*:\\s*(.+)$','i'); const m=s.match(re); if(m && !meta[key]) meta[key]=m[1].trim(); }); })); return meta; }
+function importarPlanilha(){ const file=document.getElementById('filePlanilha').files[0]; if(!file) return alert('Escolha a planilha.'); const reader=new FileReader(); reader.onload=e=>{ const wb=XLSX.read(e.target.result,{type:'array'}); let rows=[]; wb.SheetNames.forEach(sn=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''})); }); const meta=extractVehicle(rows); const modo=document.getElementById('modoVenda').value; let itens=[], serv=0; rows.forEach((r,idx)=>{ const first=String(r[0]||''); const f=norm(first); if(f.startsWith('SERVICO')) {serv++; return;} if(!(f.startsWith('PECA') && f.includes('COD'))) return; const codigo=extractCode(first); const descricao=String(r[2]||'').trim(); if(!descricao) return; const qtd=num(r[3])||1, unitBruto=num(r[4]), desconto=num(r[5]), totalLiquido=num(r[6]); const vendaUnit = modo==='bruto' ? unitBruto : (qtd? totalLiquido/qtd : totalLiquido); itens.push({ id:'i_'+String(itens.length+1).padStart(3,'0'), seq:itens.length+1, linhaPlanilha:idx+1, codigoOriginal:codigo, descricaoOriginal:descricao, quantidade:qtd, tipo:tipoPeca(descricao), valorBrutoUnitario:unitBruto, descontoPercentual:desconto, totalLiquidoPlanilha:totalLiquido, vendaUnitario:Number(vendaUnit||0), vendaTotal:Number((vendaUnit||0)*qtd), criadoEm:new Date().toISOString() }); }); imported={meta,itens,servicosIgnorados:serv,totalPecas:itens.length,valorLiquidoPecas:itens.reduce((s,i)=>s+(i.totalLiquidoPlanilha||0),0)}; renderPreview(); } ; reader.readAsArrayBuffer(file); }
+function renderPreview(){ if(!imported) return; document.getElementById('previewInfo').innerHTML=`<b>${imported.totalPecas}</b> peças importadas | <b>${imported.servicosIgnorados}</b> serviços ignorados | Valor líquido peças: <b>${money(imported.valorLiquidoPecas)}</b><br>${imported.meta.marca||''} ${imported.meta.modelo||''} ${imported.meta.placa||''}`; const box=document.getElementById('previewTable'); box.classList.remove('hidden'); box.innerHTML=`<table><thead><tr><th>#</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Venda unit.</th><th>Total venda</th><th>Tipo</th></tr></thead><tbody>${imported.itens.map(i=>`<tr><td>${i.seq}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}</td><td>${i.quantidade}</td><td>${money(i.vendaUnitario)}</td><td>${money(i.vendaTotal)}</td><td>${i.tipo}</td></tr>`).join('')}</tbody></table>`; }
+async function criarCotacaoOnline(){ if(!imported||!imported.itens.length) return alert('Importe uma planilha primeiro.'); const numero=document.getElementById('numeroCotacao').value.trim()||imported.meta.prefixo||('COT_'+Date.now()); const id='cot_'+safeId(numero)+'_'+Date.now(); const itensObj={}; imported.itens.forEach(i=>itensObj[i.id]=i); await db.ref('cotacoes/'+id).set({id,numero,status:'aberta',meta:imported.meta,itens:itensObj,criadaEm:new Date().toISOString(),valorLiquidoPecas:imported.valorLiquidoPecas}); alert('Cotação online criada.'); showTab('painel',document.querySelector('.tab')); }
+async function salvarFornecedor(){ const nome=document.getElementById('fornNome').value.trim(), whatsapp=normalizePhone(document.getElementById('fornWhats').value), tipos=document.getElementById('fornTipos').value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean); if(!nome||!whatsapp||!tipos.length) return alert('Preencha nome, WhatsApp e tipos.'); const id='forn_'+safeId(nome).toLowerCase()+'_'+Date.now(); await db.ref('fornecedores/'+id).set({id,nome,whatsapp,tipos,ativo:true,criadoEm:new Date().toISOString()}); document.getElementById('fornNome').value=''; document.getElementById('fornWhats').value=''; document.getElementById('fornTipos').value=''; }
+async function removerFornecedor(id){ if(confirm('Remover fornecedor?')) await db.ref('fornecedores/'+id).remove(); }
+function fornecedorAtende(f,tipo){ const ts=(f.tipos||[]).map(x=>norm(x)); return ts.includes('TODAS AS PECAS')||ts.includes('TODAS')||ts.includes('GERAL')||ts.includes(norm(tipo)); }
+function cotacaoLink(cotId, fornId){ const base=location.href.replace(/index\.html.*$/,'').replace(/\?.*$/,''); return `${base}fornecedor.html?cotacao=${encodeURIComponent(cotId)}&fornecedor=${encodeURIComponent(fornId)}`; }
+function conviteTexto(c,f){ const link=cotacaoLink(c.id,f.id); const total=Object.keys(c.itens||{}).length; return `${f.nome}, cotação #${c.numero}${c.meta?.placa?' - '+c.meta.placa:''}${c.meta?.modelo?' - '+c.meta.modelo:''}\n\nSão ${total} peças para cotar.\nPreencha pelo link:\n${link}\n\nPode salvar parcial. Campos: marca, cód. marca, descrição, preço e disponibilidade.`; }
+function abrirWhats(cotId,fornId){ const c=cotacoes[cotId], f=fornecedores[fornId]; const phone=normalizePhone(f.whatsapp); const text=encodeURIComponent(conviteTexto(c,f)); window.open(`https://wa.me/${phone}?text=${text}`,'_blank'); }
+async function enfileirarWhats(cotId,fornId){ const c=cotacoes[cotId], f=fornecedores[fornId]; const qid='msg_'+Date.now()+'_'+Math.random().toString(16).slice(2,7); await db.ref('whatsappQueue/'+qid).set({id:qid,status:'pending',to:normalizePhone(f.whatsapp),fornecedorId:fornId,fornecedorNome:f.nome,cotacaoId:cotId,cotacaoNumero:c.numero,message:conviteTexto(c,f),createdAt:new Date().toISOString()}); alert('Convite colocado na fila do robô.'); }
+async function enfileirarTodos(cotId){ const c=cotacoes[cotId]; const fs=Object.values(fornecedores).filter(f=>f.ativo); for(const f of fs){ await enfileirarWhats(cotId,f.id); } }
+function bestForItem(c,item){ const resps=c.respostas||{}; let arr=[]; Object.entries(resps).forEach(([fornId,byItem])=>{ const r=byItem?.[item.id]; if(r&&r.tem!==false&&num(r.precoUnitario)>0) arr.push({...r,fornecedorId:fornId,fornecedorNome:fornecedores[fornId]?.nome||r.fornecedorNome||fornId, precoUnitario:num(r.precoUnitario)}); }); arr.sort((a,b)=>a.precoUnitario-b.precoUnitario); return {best:arr[0]||null,all:arr}; }
+function quoteStats(c){ const itens=Object.values(c.itens||{}); let responded=0,lucro=0,custo=0,venda=0; itens.forEach(i=>{ const b=bestForItem(c,i).best; venda+=num(i.vendaUnitario)*num(i.quantidade); if(b){responded++; custo+=num(b.precoUnitario)*num(i.quantidade); lucro+=(num(i.vendaUnitario)-num(b.precoUnitario))*num(i.quantidade); }}); return {total:itens.length,responded,lucro,custo,venda}; }
+function renderFornecedores(){ const fs=Object.values(fornecedores); document.getElementById('fornecedoresBox').innerHTML=fs.length?`<table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Tipos</th><th></th></tr></thead><tbody>${fs.map(f=>`<tr><td>${f.nome}</td><td>${f.whatsapp}</td><td>${(f.tipos||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</td><td><button class="red" onclick="removerFornecedor('${f.id}')">Remover</button></td></tr>`).join('')}</tbody></table>`:'Nenhum fornecedor cadastrado.'; }
+function renderCotacoes(){ const cs=Object.values(cotacoes).sort((a,b)=>String(b.criadaEm).localeCompare(String(a.criadaEm))); if(!cs.length){document.getElementById('cotacoesBox').innerHTML='Nenhuma cotação criada.';return;} document.getElementById('cotacoesBox').innerHTML=cs.map(c=>{ const st=quoteStats(c); const itens=Object.values(c.itens||{}).sort((a,b)=>a.seq-b.seq); const fs=Object.values(fornecedores).filter(f=>f.ativo); return `<div class="quote"><div class="row"><h2>Cotação #${c.numero}</h2><span class="pill">${c.status}</span><span class="pill">${st.responded}/${st.total} peças com resposta</span><span class="pill">Lucro estimado: <b class="${st.lucro>=0?'profitPos':'profitNeg'}">${money(st.lucro)}</b></span></div><div class="muted">${c.meta?.marca||''} ${c.meta?.modelo||''} | Placa ${c.meta?.placa||'-'} | Chassi ${c.meta?.chassi||'-'} | KM ${c.meta?.km||'-'}</div><div class="row"><button onclick="exportarComparativo('${c.id}')">Exportar comparativo XLSX</button><button class="green" onclick="criarOrdemCompra('${c.id}')">Transformar vencedores em Ordem de Compra</button><button class="orange" onclick="enfileirarTodos('${c.id}')">Enviar todos com robô</button></div><details><summary>Fornecedores e links</summary>${fs.map(f=>`<div class="softbox" style="margin:8px 0"><b>${f.nome}</b> — ${f.whatsapp}<br><input value="${cotacaoLink(c.id,f.id)}" onclick="this.select()"><button class="light" onclick="navigator.clipboard.writeText(conviteTexto(cotacoes['${c.id}'],fornecedores['${f.id}']))">Copiar mensagem</button><button onclick="abrirWhats('${c.id}','${f.id}')">Abrir WhatsApp</button><button class="orange" onclick="enfileirarWhats('${c.id}','${f.id}')">Enviar convite com robô</button><button class="gray" onclick="window.open('${cotacaoLink(c.id,f.id)}','_blank')">Abrir formulário</button></div>`).join('')}</details><div class="scroll"><table><thead><tr><th>#</th><th>Cód.</th><th>Peça</th><th>Qtd</th><th>Venda unit.</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro total</th><th>Respostas</th></tr></thead><tbody>${itens.map(i=>{ const br=bestForItem(c,i), b=br.best; const lucro=b?(num(i.vendaUnitario)-num(b.precoUnitario))*num(i.quantidade):0; return `<tr><td>${i.seq}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}<br><span class="mini">${i.tipo}</span></td><td>${i.quantidade}</td><td>${money(i.vendaUnitario)}</td><td>${b?money(b.precoUnitario):'<span class="warn">sem preço</span>'}</td><td>${b?b.fornecedorNome+'<br><span class="mini">'+(b.marca||'')+' '+(b.codigoMarca||'')+'</span>':'-'}</td><td>${b?`<span class="${lucro>=0?'profitPos':'profitNeg'}">${money(lucro)}</span>`:'-'}</td><td>${br.all.map(r=>`${r.fornecedorNome}: ${money(r.precoUnitario)} | ${r.marca||'-'} | ${r.disponibilidade||'-'}`).join('<br>')||'-'}</td></tr>`; }).join('')}</tbody></table></div></div>`; }).join(''); }
+function cotacaoRows(c, vencedoresOnly=false){ const rows=[]; Object.values(c.itens||{}).sort((a,b)=>a.seq-b.seq).forEach(i=>{ const br=bestForItem(c,i); const arr=vencedoresOnly?(br.best?[br.best]:[]):br.all; if(!arr.length) rows.push({'OS':c.numero,'Item':i.seq,'Codigo Original':i.codigoOriginal,'Descricao Original':i.descricaoOriginal,'Qtd':i.quantidade,'Venda Unitario':i.vendaUnitario,'Fornecedor':'SEM COTAÇÃO'}); arr.forEach(r=>{ const compra=num(r.precoUnitario), qtd=num(i.quantidade), venda=num(i.vendaUnitario); rows.push({'OS':c.numero,'Item':i.seq,'Codigo Original':i.codigoOriginal,'Descricao Original':i.descricaoOriginal,'Qtd':qtd,'Venda Unitario':venda,'Venda Total':venda*qtd,'Fornecedor':r.fornecedorNome,'Marca':r.marca||'','Codigo Marca':r.codigoMarca||'','Descricao Fornecedor':r.descricaoFornecedor||'','Compra Unitario':compra,'Compra Total':compra*qtd,'Disponibilidade':r.disponibilidade||'','Lucro Unitario':venda-compra,'Lucro Total':(venda-compra)*qtd}); }); }); return rows; }
+function exportarComparativo(cotId){ const c=cotacoes[cotId]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(cotacaoRows(c,false)),'Comparativo'); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(cotacaoRows(c,true)),'Vencedores'); XLSX.writeFile(wb,`comparativo_${c.numero}.xlsx`); }
+async function criarOrdemCompra(cotId){ const c=cotacoes[cotId]; const itens=[]; Object.values(c.itens||{}).forEach(i=>{ const b=bestForItem(c,i).best; if(b) itens.push({item:i.seq,codigoOriginal:i.codigoOriginal,descricaoOriginal:i.descricaoOriginal,qtd:i.quantidade,vendaUnitario:i.vendaUnitario,fornecedorId:b.fornecedorId,fornecedorNome:b.fornecedorNome,marca:b.marca||'',codigoMarca:b.codigoMarca||'',descricaoFornecedor:b.descricaoFornecedor||'',compraUnitario:num(b.precoUnitario),compraTotal:num(b.precoUnitario)*num(i.quantidade),lucroTotal:(num(i.vendaUnitario)-num(b.precoUnitario))*num(i.quantidade),disponibilidade:b.disponibilidade||''}); }); if(!itens.length) return alert('Nenhuma peça com cotação para virar ordem de compra.'); const ocId='oc_'+safeId(c.numero)+'_'+Date.now(); await db.ref('ordensCompra/'+ocId).set({id:ocId,cotacaoId:cotId,numeroCotacao:c.numero,status:'gerada',itens,criadaEm:new Date().toISOString(),totalCompra:itens.reduce((s,i)=>s+i.compraTotal,0),lucroTotal:itens.reduce((s,i)=>s+i.lucroTotal,0)}); alert('Ordem de compra criada.'); }
+function renderOCs(){ const ocs=Object.values(ordensCompra).sort((a,b)=>String(b.criadaEm).localeCompare(String(a.criadaEm))); document.getElementById('ocsBox').innerHTML=ocs.length?ocs.map(oc=>`<div class="quote"><h3>OC ${oc.id}</h3><div class="muted">Cotação #${oc.numeroCotacao} | Total compra: <b>${money(oc.totalCompra)}</b> | Lucro estimado: <b class="${oc.lucroTotal>=0?'profitPos':'profitNeg'}">${money(oc.lucroTotal)}</b></div><button onclick="exportarOC('${oc.id}')">Exportar OC XLSX</button><details><summary>Ver itens</summary><div class="scroll"><table><thead><tr><th>Fornecedor</th><th>Item</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Compra unit.</th><th>Total</th><th>Disponib.</th></tr></thead><tbody>${(oc.itens||[]).map(i=>`<tr><td>${i.fornecedorNome}</td><td>${i.item}</td><td>${i.codigoOriginal}</td><td>${i.descricaoOriginal}<br><span class="mini">${i.marca} ${i.codigoMarca}</span></td><td>${i.qtd}</td><td>${money(i.compraUnitario)}</td><td>${money(i.compraTotal)}</td><td>${i.disponibilidade}</td></tr>`).join('')}</tbody></table></div></details></div>`).join(''):'Nenhuma ordem de compra gerada.'; }
+function exportarOC(id){ const oc=ordensCompra[id]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{OC:oc.id,'Cotacao':oc.numeroCotacao,'Total Compra':oc.totalCompra,'Lucro Estimado':oc.lucroTotal,'Criada em':oc.criadaEm}]),'Resumo'); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(oc.itens||[]),'Itens'); XLSX.writeFile(wb,`ordem_compra_${oc.numeroCotacao}.xlsx`); }
+function importarOrdemCompraPlanilha(){ const file=document.getElementById('fileImportOC').files[0]; if(!file) return alert('Escolha uma planilha.'); const reader=new FileReader(); reader.onload=async e=>{ const wb=XLSX.read(e.target.result,{type:'array'}); const sheet=wb.Sheets['Itens']||wb.Sheets[wb.SheetNames[0]]; const itens=XLSX.utils.sheet_to_json(sheet,{defval:''}); if(!itens.length) return alert('Nenhum item encontrado.'); const ocId='oc_importada_'+Date.now(); const normItens=itens.map(x=>({item:x.item||x.Item||'',codigoOriginal:x.codigoOriginal||x['Codigo Original']||'',descricaoOriginal:x.descricaoOriginal||x['Descricao Original']||'',qtd:num(x.qtd||x.Qtd),fornecedorNome:x.fornecedorNome||x.Fornecedor||'',marca:x.marca||x.Marca||'',codigoMarca:x.codigoMarca||x['Codigo Marca']||'',compraUnitario:num(x.compraUnitario||x['Compra Unitario']),compraTotal:num(x.compraTotal||x['Compra Total']),disponibilidade:x.disponibilidade||x.Disponibilidade||''})); await db.ref('ordensCompra/'+ocId).set({id:ocId,status:'importada',numeroCotacao:'importada',itens:normItens,criadaEm:new Date().toISOString(),totalCompra:normItens.reduce((s,i)=>s+num(i.compraTotal),0),lucroTotal:0}); alert('Planilha importada como ordem de compra.'); }; reader.readAsArrayBuffer(file); }
+function renderFila(){ const qs=Object.values(fila).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,50); document.getElementById('filaBox').innerHTML=`<h3>Últimos itens da fila</h3>${qs.length?`<table><thead><tr><th>Status</th><th>Fornecedor</th><th>Cotação</th><th>Criado</th><th>Erro</th></tr></thead><tbody>${qs.map(q=>`<tr><td>${q.status}</td><td>${q.fornecedorNome}</td><td>${q.cotacaoNumero}</td><td>${q.createdAt||''}</td><td>${q.error||''}</td></tr>`).join('')}</tbody></table>`:'Fila vazia.'}`; }
+function refreshAll(){ document.getElementById('kCot').textContent=Object.keys(cotacoes).length; document.getElementById('kForn').textContent=Object.keys(fornecedores).length; document.getElementById('kOC').textContent=Object.keys(ordensCompra).length; document.getElementById('kFila').textContent=Object.values(fila).filter(q=>q.status==='pending').length; renderFornecedores(); renderCotacoes(); renderOCs(); renderFila(); }
+db.ref('fornecedores').on('value',s=>{fornecedores=s.val()||{}; refreshAll();});
+db.ref('cotacoes').on('value',s=>{cotacoes=s.val()||{}; refreshAll();});
+db.ref('ordensCompra').on('value',s=>{ordensCompra=s.val()||{}; refreshAll();});
+db.ref('whatsappQueue').on('value',s=>{fila=s.val()||{}; refreshAll();});
 </script>
 </body>
 </html>

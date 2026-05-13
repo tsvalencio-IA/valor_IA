@@ -1,6 +1,6 @@
-// Firebase configurado diretamente no arquivo, sem tela de configuração.
-// Esta configuração Web App não é senha. A segurança real fica nas Rules do Realtime Database.
-export const firebaseConfig = {
+// Configuração Firebase do projeto valorIA
+// Arquivo público do app Web. A segurança real fica nas regras do Realtime Database.
+const firebaseConfig = {
   apiKey: "AIzaSyAJDq18thvCzDsjTGRsJLmQQ0DuXuZFA5c",
   authDomain: "valoria-70900.firebaseapp.com",
   databaseURL: "https://valoria-70900-default-rtdb.firebaseio.com",
