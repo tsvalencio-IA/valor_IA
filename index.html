@@ -172,9 +172,29 @@
 
   <section id="importar" class="tabpage hidden">
     <div class="card">
-      <h2>Importar planilha de OS</h2>
+      <h2>Novo orçamento / cotação</h2>
+      <p id='editingNotice' class='muted small'>Digite manualmente, importe planilha ou edite uma cotação já existente.</p>
+      <div class="notice">
+        Você pode importar uma planilha ou digitar as peças manualmente. O orçamento fica salvo com os dados do veículo e as peças usadas.
+      </div>
+
+      <h3>1. Dados do orçamento e veículo</h3>
       <div class="grid">
-        <div><label>Número da cotação/OS</label><input id="imp_number" placeholder="Ex: I52203"></div>
+        <div><label>Número da cotação/OS/orçamento</label><input id="imp_number" placeholder="Ex: I52203, ORC-001"></div>
+        <div><label>Cliente / referência</label><input id="veh_customer" placeholder="Ex: Cliente balcão, frota, seguradora"></div>
+        <div><label>Marca</label><input id="veh_brand" placeholder="Ex: RENAULT"></div>
+        <div><label>Modelo</label><input id="veh_model" placeholder="Ex: RENAULT DUSTER"></div>
+        <div><label>Ano</label><input id="veh_year" placeholder="Ex: 2020"></div>
+        <div><label>Placa</label><input id="veh_plate" placeholder="Ex: FBO3E02"></div>
+        <div><label>Chassi</label><input id="veh_chassi" placeholder="Chassi"></div>
+        <div><label>KM</label><input id="veh_km" placeholder="Quilometragem"></div>
+        <div><label>Prefixo / frota</label><input id="veh_prefix" placeholder="Ex: I52203"></div>
+      </div>
+      <label>Observação do orçamento</label>
+      <textarea id="veh_obs" placeholder="Observações internas, urgência, preferência por original/paralelo, etc."></textarea>
+
+      <h3>2. Importar planilha, se existir</h3>
+      <div class="grid">
         <div><label>Planilha XLSX</label><input id="imp_file" type="file" accept=".xlsx,.xls,.csv"></div>
         <div>
           <label>Preço de venda usado para lucro</label>
@@ -185,9 +205,34 @@
         </div>
       </div>
       <button onclick="previewImport()">Importar somente PEÇAS</button>
-      <button class="green" onclick="createQuoteFromImport()">Criar cotação online</button>
       <p class="muted">Importação inteligente: aceita planilhas no padrão <b>PEÇA / CÓD.</b> e também tabelas com <b>GRADE / CÓDIGO DA PEÇA</b>. Serviços são ignorados.</p>
+
+      <h3>3. Adicionar peça manualmente</h3>
+      <div class="grid">
+        <div><label>Código original/OEM</label><input id="manual_oem" placeholder="Ex: 8201703980 ou sem oem"></div>
+        <div><label>Código alternativo</label><input id="manual_alt" placeholder="Opcional"></div>
+        <div><label>Descrição da peça</label><input id="manual_desc" placeholder="Ex: DISCO DO FREIO DIANT"></div>
+        <div><label>Quantidade</label><input id="manual_qty" value="1"></div>
+        <div><label>Preço de venda/base unitário</label><input id="manual_unit" placeholder="Ex: 100,00"></div>
+        <div><label>Tipo/categoria</label>
+          <select id="manual_type">
+            <option value="geral">geral</option>
+            <option value="freio">freio</option>
+            <option value="motor">motor</option>
+            <option value="eletrica">elétrica</option>
+            <option value="arrefecimento">arrefecimento</option>
+            <option value="lataria">lataria</option>
+            <option value="suspensao">suspensão</option>
+          </select>
+        </div>
+      </div>
+      <button class="light" onclick="addManualItem()">Adicionar peça</button>
+      <button class="gray" onclick="clearDraftItems()">Limpar peças da prévia</button>
+
+      <h3>4. Prévia do orçamento</h3>
       <div id="importPreview"></div>
+
+      <button class="green" onclick="createQuoteFromImport()">Salvar orçamento e criar cotação online</button>
     </div>
   </section>
 
@@ -234,7 +279,7 @@
 <script>
 const ASSINATURA = "Powered by thIAguinho Soluções Digitais";
 let db, settings={}, suppliers={}, priceDb={}, quotes={}, orders={}, queue={}, robotStatus={};
-let importItems=[], importVehicle={}, importPattern="";
+let importItems=[], importVehicle={}, importPattern="", editingQuoteId=null;
 let selectedPrices = new Set();
 
 const NICHOS = [
@@ -411,6 +456,7 @@ function previewImport(){
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
       const rows=[]; wb.SheetNames.forEach(n=>rows.push(...XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:""})));
       importVehicle=extractVehicle(rows);
+      fillVehicleForm(importVehicle);
       const parsed=parsePiecesSmart(rows);
       importItems=parsed.items;
       importPattern=parsed.pattern;
@@ -466,6 +512,26 @@ function getCodeFromPieceCell(cell){
   const m=s.match(/C[ÓO]D\.?\s*:?\s*([^\n\r]+)/i);
   return (m ? m[1] : "").trim() || "sem oem";
 }
+
+function isHeaderLikeText(v){
+  const t=norm(v);
+  return !t || t==="DESCRICAO" || t==="DESCRIÇÃO" || t==="QTD" || t==="QUANTIDADE" || t==="VALOR" || t==="TOTAL" || t.includes("CODIGO DA PECA") || t.includes("CÓDIGO DA PEÇA") || t.includes("CODIGO ORIGINAL") || t.includes("CÓDIGO ORIGINAL");
+}
+function validPieceDescription(desc){
+  const t=norm(desc);
+  if(isHeaderLikeText(desc)) return false;
+  if(t.length < 3) return false;
+  if(t.includes("SERVICO") || t.includes("SERVIÇO")) return false;
+  if(t.includes("MAO DE OBRA") || t.includes("MÃO DE OBRA")) return false;
+  return true;
+}
+function cleanCodeValue(v){
+  const s=cleanVal(v);
+  const t=norm(s);
+  if(!s || t.includes("CODIGO") || t.includes("CÓDIGO") || t==="PECA" || t==="PEÇA") return "sem oem";
+  return s;
+}
+
 function parsePiecesInline(rows){
   const out=[];
   rows.forEach((r,idx)=>{
@@ -493,10 +559,10 @@ function parsePiecesInline(rows){
     const discount = parseMoney(cells[6]) || 0;
     const total = parseMoney(cells[7]) || (unit ? unit*qty*(discount>0 && discount<1 ? (1-discount) : 1) : 0);
 
-    if(desc){
+    if(validPieceDescription(desc)){
       out.push({
         id:uid("item"), seq:out.length+1, line:idx+1, importPattern:"PEÇA/CÓD.",
-        oem:code, altCode:"", desc, qty, type:classify(desc),
+        oem:cleanCodeValue(code), altCode:"", desc, qty, type:classify(desc),
         saleUnit: total && qty ? total/qty : unit,
         saleTotal: total || unit*qty, discount, totalPlan:total, unitPlan:unit,
         raw:cells.join(" | ")
@@ -546,10 +612,10 @@ function parsePiecesGrade(rows){
       const discount = parseMoney(row[idxDisc]) || parseMoney(row[6]) || 0;
       const total = parseMoney(row[idxTotal]) || parseMoney(row[7]) || (unit ? unit*qty*(discount>0 && discount<1 ? (1-discount) : 1) : 0);
 
-      if(desc && !norm(desc).includes("DESCRICAO")){
+      if(validPieceDescription(desc)){
         out.push({
           id:uid("item"), seq:out.length+1, line:r+1, importPattern:"GRADE",
-          oem:code, altCode, desc, qty, type:classify(desc),
+          oem:cleanCodeValue(code), altCode:cleanCodeValue(altCode)==='sem oem'?'':altCode, desc, qty, type:classify(desc),
           saleUnit: total && qty ? total/qty : unit,
           saleTotal: total || unit*qty, discount, totalPlan:total, unitPlan:unit,
           raw:row.join(" | ")
@@ -578,8 +644,8 @@ function parsePiecesGenericTable(rows){
     if(txt.includes("SERVICO") || txt.includes("SERVIÇO")) continue;
     if(txt.includes("TOTAL") && out.length) break;
     const desc=cleanVal(row[idxDesc]||"");
-    if(!desc) continue;
-    const code=cleanVal(row[idxCode]||"sem oem");
+    if(!validPieceDescription(desc)) continue;
+    const code=cleanCodeValue(row[idxCode]||"sem oem");
     const qty=parseMoney(row[idxQty])||1;
     const unit=parseMoney(row[idxUnit])||0;
     const total=parseMoney(row[idxTotal])||unit*qty;
@@ -617,21 +683,133 @@ function classify(desc){const d=norm(desc);
 function renderImportPreview(){
   const total=importItems.reduce((s,i)=>s+(Number(i.saleTotal)||((Number(i.saleUnit)||0)*(Number(i.qty)||1))),0);
   if(!importItems.length){
-    $("importPreview").innerHTML=`<div class='alert'><b>Nenhuma peça encontrada.</b><br>O importador agora entende dois padrões principais: linhas PEÇA/CÓD. e tabela GRADE/CÓDIGO DA PEÇA. Se esta planilha tiver outro modelo, envie a planilha para criarmos mais um leitor específico.</div>`;
+    $("importPreview").innerHTML=`<div class='alert'><b>Nenhuma peça na prévia.</b><br>Importe uma planilha ou adicione peças manualmente para montar o orçamento.</div>`;
     return;
   }
   $("importPreview").innerHTML=`<div class='success'>
-    <b>${importItems.length}</b> peças encontradas. 
-    Padrão detectado: <b>${esc(importPattern)}</b>. 
+    <b>${importItems.length}</b> peça(s) no orçamento. 
+    Padrão/origem: <b>${esc(importPattern || "MANUAL")}</b>. 
     Valor base de venda: <b>${money(total)}</b>.
   </div>
-  <details open><summary>Ver peças importadas</summary><div class='tablewrap'><table><thead><tr><th>#</th><th>Linha</th><th>Cód. original</th><th>Cód. alternativo</th><th>Descrição</th><th>Qtd</th><th>Unit. planilha</th><th>Total planilha</th><th>Tipo</th></tr></thead><tbody>${importItems.map(i=>`<tr><td>${i.seq}</td><td>${i.line}</td><td>${esc(i.oem)}</td><td>${esc(i.altCode||"-")}</td><td>${esc(i.desc)}</td><td>${i.qty}</td><td>${money(i.unitPlan||i.saleUnit||0)}</td><td>${money(i.saleTotal||0)}</td><td>${esc(i.type)}</td></tr>`).join("")}</tbody></table></div></details>`;
+  <div class='tablewrap'><table><thead><tr><th>#</th><th>Origem/linha</th><th>Cód. original</th><th>Cód. alt.</th><th>Descrição</th><th>Qtd</th><th>Unit.</th><th>Total base</th><th>Tipo</th><th>Ação</th></tr></thead><tbody>${importItems.map((i,idx)=>`<tr><td>${idx+1}</td><td>${esc(i.line || i.importPattern || "manual")}</td><td>${esc(i.oem)}</td><td>${esc(i.altCode||"-")}</td><td>${esc(i.desc)}</td><td>${i.qty}</td><td>${money(i.saleUnit||0)}</td><td>${money(i.saleTotal||0)}</td><td>${esc(i.type)}</td><td><button class='red' onclick="removeDraftItem('${i.id}')">Remover</button></td></tr>`).join("")}</tbody></table></div>`;
+}
+function collectVehicleFromForm(){
+  return {
+    customer: $("veh_customer")?.value?.trim() || importVehicle.customer || "",
+    brand: $("veh_brand")?.value?.trim() || importVehicle.brand || "",
+    model: $("veh_model")?.value?.trim() || importVehicle.model || "",
+    year: $("veh_year")?.value?.trim() || importVehicle.year || "",
+    plate: $("veh_plate")?.value?.trim() || importVehicle.plate || "",
+    chassi: $("veh_chassi")?.value?.trim() || importVehicle.chassi || "",
+    km: $("veh_km")?.value?.trim() || importVehicle.km || "",
+    prefix: $("veh_prefix")?.value?.trim() || importVehicle.prefix || "",
+    obs: $("veh_obs")?.value?.trim() || importVehicle.obs || ""
+  };
+}
+function fillVehicleForm(vehicle){
+  const v=vehicle||{};
+  if($("veh_brand")) $("veh_brand").value = v.brand || $("veh_brand").value || "";
+  if($("veh_model")) $("veh_model").value = v.model || $("veh_model").value || "";
+  if($("veh_year")) $("veh_year").value = v.year || $("veh_year").value || "";
+  if($("veh_plate")) $("veh_plate").value = v.plate || $("veh_plate").value || "";
+  if($("veh_chassi")) $("veh_chassi").value = v.chassi || $("veh_chassi").value || "";
+  if($("veh_km")) $("veh_km").value = v.km || $("veh_km").value || "";
+  if($("veh_prefix")) $("veh_prefix").value = v.prefix || $("veh_prefix").value || "";
+}
+function addManualItem(){
+  const desc = $("manual_desc").value.trim();
+  if(!desc) return alert("Digite a descrição da peça.");
+  const qty = parseMoney($("manual_qty").value) || 1;
+  const unit = parseMoney($("manual_unit").value) || 0;
+  const type = $("manual_type").value || classify(desc);
+  const item = {
+    id: uid("item"),
+    seq: importItems.length + 1,
+    line: "manual",
+    importPattern: "MANUAL",
+    oem: $("manual_oem").value.trim() || "sem oem",
+    altCode: $("manual_alt").value.trim() || "",
+    desc,
+    qty,
+    type,
+    saleUnit: unit,
+    saleTotal: unit * qty,
+    discount: 0,
+    totalPlan: unit * qty,
+    unitPlan: unit,
+    raw: "digitado manualmente"
+  };
+  importItems.push(item);
+  importPattern = importPattern || "MANUAL";
+  ["manual_oem","manual_alt","manual_desc","manual_unit"].forEach(id=>$(id).value="");
+  $("manual_qty").value="1";
+  $("manual_type").value="geral";
+  renderImportPreview();
+}
+function removeDraftItem(id){
+  importItems = importItems.filter(i=>i.id!==id).map((i,idx)=>({...i,seq:idx+1}));
+  renderImportPreview();
+}
+function clearDraftItems(){
+  if(confirm("Limpar todas as peças da prévia?")){
+    importItems=[];
+    importPattern="";
+    renderImportPreview();
+  }
 }
 function createQuoteFromImport(){
-  if(!importItems.length)return alert("Importe a planilha primeiro.");
-  const qid=uid("quote"); const number=$("imp_number").value.trim()||("OS-"+Date.now());
-  const quote={id:qid,number,status:"open",kind:"normal",vehicle:importVehicle,items:importItems,importPattern,responses:{},createdAt:Date.now(),signature:ASSINATURA};
-  db.ref("quotes/"+qid).set(quote).then(()=>{alert("Cotação online criada.");showTab("cotacoes");});
+  if(!importItems.length)return alert("Adicione pelo menos uma peça manualmente ou importe uma planilha.");
+  const number=$("imp_number").value.trim()||`ORC-${new Date().toISOString().slice(0,10)}-${Date.now().toString().slice(-4)}`;
+  const vehicle = collectVehicleFromForm();
+  const items = importItems.map((i,idx)=>({...i,seq:idx+1}));
+  const qid = editingQuoteId || uid("quote");
+  const oldQuote = editingQuoteId ? (quotes[editingQuoteId] || {}) : {};
+  const quote={
+    ...oldQuote,
+    id:qid,
+    number,
+    status: oldQuote.status || "open",
+    kind: importPattern==="MANUAL" ? "manual" : (oldQuote.kind || "normal"),
+    source: importPattern || oldQuote.source || "MANUAL",
+    vehicle,
+    items,
+    itemCount: items.length,
+    totalBase: items.reduce((s,i)=>s+(Number(i.saleTotal)||0),0),
+    importPattern: importPattern || oldQuote.importPattern || "MANUAL",
+    responses: oldQuote.responses || {},
+    createdAt: oldQuote.createdAt || Date.now(),
+    updatedAt: Date.now(),
+    signature:ASSINATURA
+  };
+  db.ref("quotes/"+qid).set(quote).then(()=>{
+    alert(editingQuoteId ? "Orçamento atualizado." : "Orçamento salvo e cotação online criada.");
+    editingQuoteId=null;
+    importItems=[];
+    importPattern="";
+    if($("imp_number")) $("imp_number").value="";
+    renderImportPreview();
+    showTab("cotacoes");
+  });
+}
+function editQuote(qid){
+  const q=quotes[qid];
+  if(!q)return alert("Orçamento não encontrado.");
+  editingQuoteId=qid;
+  importItems=(q.items||[]).map((i,idx)=>({...i,seq:idx+1,id:i.id||uid("item")}));
+  importPattern=q.importPattern||q.source||"MANUAL";
+  importVehicle=q.vehicle||{};
+  if($("imp_number")) $("imp_number").value=q.number||"";
+  fillVehicleForm(importVehicle);
+  renderImportPreview();
+  showTab("importar");
+  setTimeout(()=>window.scrollTo({top:0,behavior:"smooth"}),100);
+}
+function deleteQuote(qid){
+  const q=quotes[qid];
+  if(!q)return;
+  if(confirm(`Excluir definitivamente o orçamento/cotação ${q.number||qid}?\\n\\nIsso remove o link do fornecedor e as respostas salvas desta cotação.`)){
+    db.ref("quotes/"+qid).remove().then(()=>alert("Orçamento excluído."));
+  }
 }
 function supplierMatchesItem(s,item){
   const types=(s.types||[]).map(x=>String(x).toLowerCase());
@@ -697,16 +875,32 @@ function renderQuote(q){
   const answered=winners.filter(w=>w.winner).length; const pct=(q.items?.length?Math.round(answered/(q.items.length)*100):0);
   return `<div class='quote ${q.status==="closed"?"closed":""}'>
     <div class='row'><h3>${esc(q.number)} ${q.status==="closed"?"<span class='pill'>encerrada</span>":"<span class='pill'>aberta</span>"}</h3></div>
-    <p class='muted'>${esc(q.vehicle?.model||"")} ${esc(q.vehicle?.plate||"")} — ${q.items?.length||0} item(ns) — respondidos ${answered}/${q.items?.length||0}</p>
+    <p class='muted'>${esc(q.vehicle?.brand||"")} ${esc(q.vehicle?.model||"")} ${esc(q.vehicle?.year||"")} — Placa ${esc(q.vehicle?.plate||"-")} — ${q.items?.length||0} item(ns) — respondidos ${answered}/${q.items?.length||0}</p>
+    <div class='tablewrap'>
+      <table>
+        <tbody>
+          <tr><th>Cliente/ref.</th><td>${esc(q.vehicle?.customer||"-")}</td><th>Marca</th><td>${esc(q.vehicle?.brand||"-")}</td></tr>
+          <tr><th>Modelo</th><td>${esc(q.vehicle?.model||"-")}</td><th>Ano</th><td>${esc(q.vehicle?.year||"-")}</td></tr>
+          <tr><th>Placa</th><td>${esc(q.vehicle?.plate||"-")}</td><th>Chassi</th><td>${esc(q.vehicle?.chassi||"-")}</td></tr>
+          <tr><th>KM</th><td>${esc(q.vehicle?.km||"-")}</td><th>Prefixo/frota</th><td>${esc(q.vehicle?.prefix||"-")}</td></tr>
+          <tr><th>Observação</th><td colspan="3">${esc(q.vehicle?.obs||"-")}</td></tr>
+        </tbody>
+      </table>
+    </div>
     <div class='bar'><span style='width:${pct}%'></span></div>
     <p><b>Lucro estimado com melhores preços:</b> <span class='ok'>${money(lucro)}</span></p>
     <div class='row'>
       ${q.status==="closed"?`<button class='green' onclick="reopenQuote('${q.id}')">Reabrir cotação</button>`:`<button class='red' onclick="closeQuote('${q.id}')">Encerrar cotação</button>`}
       <button onclick="generateOrder('${q.id}')">Gerar ordem de compra</button>
+      <button class='light' onclick="editQuote('${q.id}')">Editar orçamento</button>
       <button class='light' onclick="exportComparison('${q.id}')">Exportar comparativo XLSX</button>
+      <button class='red' onclick="deleteQuote('${q.id}')">Excluir</button>
     </div>
     <details><summary>Enviar convite aos fornecedores</summary>${suppliersForQuote.map(s=>`<div class='quote'><b>${esc(s.name)}</b><br><button onclick="enqueueWhatsapp('${q.id}','${s.id}')">Enviar com robô</button><button class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar mensagem</button><button class='light' onclick="openSupplierForm('${q.id}','${s.id}')">Abrir formulário</button></div>`).join("")||"<p class='muted'>Nenhum fornecedor compatível.</p>"}</details>
     <details><summary>Melhores opções e lucro</summary><div class='tablewrap'><table><thead><tr><th>Peça</th><th>Venda base</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro</th></tr></thead><tbody>${winners.map(w=>`<tr><td><b>${esc(w.item.desc)}</b><br><span class='muted'>${esc(w.item.oem)} | Qtd ${w.item.qty}</span></td><td>${money(w.saleTotal)}</td><td>${w.winner?money(w.buyTotal):"<span class='bad'>sem resposta</span>"}</td><td>${w.winner?`${esc(w.winner.supplierName)}<br>${esc(w.winner.brand||"-")} ${esc(w.winner.brandCode||"")}`:"-"}</td><td class='${w.profit>=0?"ok":"bad"}'>${w.winner?money(w.profit):"-"}</td></tr>`).join("")}</tbody></table></div></details>
+    <details><summary>Peças salvas neste orçamento</summary>
+      <div class='tablewrap'><table><thead><tr><th>#</th><th>Cód.</th><th>Cód. alt.</th><th>Descrição</th><th>Qtd</th><th>Venda/base</th><th>Tipo</th><th>Origem</th></tr></thead><tbody>${(q.items||[]).map(i=>`<tr><td>${i.seq||""}</td><td>${esc(i.oem||"-")}</td><td>${esc(i.altCode||"-")}</td><td>${esc(i.desc||"-")}</td><td>${i.qty||1}</td><td>${money(i.saleTotal||0)}</td><td>${esc(i.type||"geral")}</td><td>${esc(i.importPattern||q.importPattern||q.source||"-")}</td></tr>`).join("")}</tbody></table></div>
+    </details>
   </div>`;
 }
 function closeQuote(id){if(confirm("Encerrar cotação? Ela não ficará mais visível para vendedores."))db.ref("quotes/"+id).update({status:"closed",closedAt:Date.now()});}

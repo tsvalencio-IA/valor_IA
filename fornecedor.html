@@ -2,29 +2,57 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>Formulário de cotação — valor_IA</title>
+<title>Responder cotação — valor_IA</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <style>
-:root{--bg:#f4f7fb;--panel:#fff;--text:#182235;--muted:#68758a;--line:#d9e2ef;--blue:#2563eb;--green:#16a34a;--red:#dc2626;--radius:18px}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text)}main{max-width:920px;margin:auto;padding:16px}
-.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
-h1{font-size:24px;margin:8px 0}h2{font-size:18px;margin:0 0 10px}.muted{color:var(--muted)}label{display:block;margin:8px 0 4px;font-weight:700;color:#46556b;font-size:13px}
-input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:14px}textarea{min-height:60px}
-button{border:0;border-radius:12px;padding:11px 14px;background:var(--blue);color:white;font-weight:800;cursor:pointer}button.green{background:var(--green)}button.red{background:var(--red)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.item{border:1px solid var(--line);border-radius:16px;padding:12px;margin:12px 0;background:#fff}
-.ok{color:var(--green);font-weight:800}.bad{color:var(--red);font-weight:800}.pill{display:inline-block;border:1px solid var(--line);background:#f8fafc;border-radius:999px;padding:5px 8px;margin:2px;font-size:12px}.footer{text-align:center;color:#64748b;padding:20px}
+:root{
+  --bg:#f5f7fb;--card:#ffffff;--soft:#f8fafc;--text:#172033;--muted:#667085;
+  --line:#d9e2ef;--blue:#1d4ed8;--green:#16a34a;--red:#dc2626;--amber:#d97706;
+  --shadow:0 10px 28px rgba(15,23,42,.08);--radius:20px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#eef5ff,#f8fafc);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+header{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px}
+main{max-width:960px;margin:auto;padding:14px}
+h1{font-size:22px;margin:0}h2{font-size:18px;margin:0 0 8px}.muted{color:var(--muted)}.small{font-size:12px}
+.card,.item{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin:12px 0;box-shadow:var(--shadow)}
+.hero{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-block;border:1px solid var(--line);background:#f8fafc;border-radius:999px;padding:6px 9px;margin:3px;font-size:12px}
+.progress{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--green),#22c55e)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+label{display:block;margin:8px 0 4px;font-weight:800;color:#46556b;font-size:13px}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:13px;padding:11px;font-size:14px;background:#fff}
+textarea{min-height:56px}
+button{border:0;border-radius:13px;padding:11px 13px;background:var(--blue);color:white;font-weight:900;cursor:pointer;margin:3px}
+button.green{background:var(--green)}button.red{background:var(--red)}button.amber{background:var(--amber)}button.light{background:#eef4fb;color:#243349;border:1px solid var(--line)}
+.quick{display:flex;gap:7px;flex-wrap:wrap}.quick button{flex:1;min-width:90px}
+.itemHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.itemNumber{background:#e0edff;color:#1d4ed8;border-radius:14px;padding:8px 10px;font-weight:900}
+.item.saved{border-color:#bbf7d0;background:#fbfffc}.item.unavailable{border-color:#fecaca;background:#fffafa}
+.stickyBottom{position:sticky;bottom:0;background:rgba(245,247,251,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px;margin-top:20px}
+.footer{text-align:center;color:#64748b;padding:22px}
+.ok{color:var(--green);font-weight:900}.bad{color:var(--red);font-weight:900}
+@media(max-width:680px){main{padding:10px}.card,.item{border-radius:16px;padding:13px}header{padding:12px}h1{font-size:19px}.quick button{min-width:80px}}
 </style>
 </head>
 <body>
+<header>
+  <div class="hero">
+    <div>
+      <h1>🧾 Responder cotação</h1>
+      <div class="muted small">Rápido, simples e sem textão no WhatsApp.</div>
+    </div>
+    <div id="topStatus" class="badge">Carregando...</div>
+  </div>
+</header>
 <main>
-  <h1>Formulário de cotação</h1>
-  <p class="muted">Preencha preço, marca, código da marca, descrição e disponibilidade. Pode salvar parcial.</p>
   <div id="app">Carregando...</div>
 </main>
 <div class="footer">Powered by thIAguinho Soluções Digitais</div>
+
 <script>
 const ASSINATURA="Powered by thIAguinho Soluções Digitais";
 let db,qid,sid,token,quote={},supplier={};
@@ -33,6 +61,7 @@ function qs(k){return new URLSearchParams(location.search).get(k)||""}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
 function parseMoney(v){let s=String(v||"").replace(/[^\d,.-]/g,"").trim();if(!s)return 0;if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"").replace(",",".");else if(s.includes(","))s=s.replace(",",".");let n=Number(s);return Number.isFinite(n)?n:0}
+function setVal(id,v){const el=$(id); if(el) el.value=v}
 function init(){
   firebase.initializeApp(window.firebaseConfig); db=firebase.database();
   qid=qs("q"); sid=qs("s"); token=qs("t");
@@ -40,46 +69,120 @@ function init(){
   db.ref("quotes/"+qid).on("value",snap=>{quote=snap.val()||{}; loadSupplier();});
 }
 function loadSupplier(){db.ref("suppliers/"+sid).once("value").then(s=>{supplier=s.val()||{}; render();});}
+function visibleItems(){
+  return (quote.items||[]).filter(i=>quote.kind==="priceCheck"?i.targetSupplierId===sid:true);
+}
+function countAnswered(items,resp){
+  return items.filter(i=>resp[i.id] && (resp[i.id].price || resp[i.id].available===false)).length;
+}
 function render(){
   if(!quote.id)return $("app").innerHTML="<div class='card'>Cotação não encontrada.</div>";
   const link=quote.links?.[sid];
   if(link?.token && token && link.token!==token)return $("app").innerHTML="<div class='card'><b>Link não autorizado.</b></div>";
-  if(quote.status==="closed")return $("app").innerHTML=`<div class='card'><h2>Cotação encerrada</h2><p>Esta cotação não está mais disponível para resposta.</p><p class='muted'>${ASSINATURA}</p></div>`;
-  const items=(quote.items||[]).filter(i=>quote.kind==="priceCheck"?i.targetSupplierId===sid:true);
+  if(quote.status==="closed"){
+    $("topStatus").textContent="Encerrada";
+    return $("app").innerHTML=`<div class='card'><h2>Cotação encerrada</h2><p>Esta cotação não está mais disponível para resposta.</p><p class='muted'>${ASSINATURA}</p></div>`;
+  }
+  const items=visibleItems();
   const resp=quote.responses?.[sid]||{};
-  $("app").innerHTML=`<div class='card'><h2>${esc(supplier.name||"Fornecedor")}</h2><p><b>Cotação:</b> ${esc(quote.number||qid)}<br><b>Itens:</b> ${items.length}</p></div>
-  ${items.map((it,idx)=>{const r=resp[it.id]||{};return `<div class='item'><h2>${idx+1}. ${esc(it.desc)}</h2><p><span class='pill'>OEM: ${esc(it.oem||"-")}</span><span class='pill'>Qtd: ${esc(it.qty||1)}</span>${it.lastKnownPrice?`<span class='pill'>Valor conhecido: ${money(it.lastKnownPrice)}</span>`:""}</p>
-    <div class='grid'>
-      <div><label>Tenho / consigo fornecer?</label><select id='av_${it.id}'><option value='true' ${(r.available!==false)?"selected":""}>Sim</option><option value='false' ${r.available===false?"selected":""}>Não</option></select></div>
-      <div><label>Marca</label><input id='brand_${it.id}' value='${esc(r.brand||it.brand||"")}'></div>
-      <div><label>Código da marca</label><input id='bc_${it.id}' value='${esc(r.brandCode||it.brandCode||"")}'></div>
-      <div><label>Preço unitário atual</label><input id='price_${it.id}' value='${esc(r.price||it.lastKnownPrice||"")}' placeholder='100,00'></div>
-      <div><label>Disponibilidade / prazo</label><input id='disp_${it.id}' value='${esc(r.availability||it.availability||"")}' placeholder='hoje / amanhã / 2 dias'></div>
+  const answered=countAnswered(items,resp);
+  const pct=items.length?Math.round(answered/items.length*100):0;
+  $("topStatus").textContent=`${answered}/${items.length} respondidos`;
+
+  $("app").innerHTML=`
+    <div class="card">
+      <h2>${esc(supplier.name||"Fornecedor")}</h2>
+      <p><b>Cotação:</b> ${esc(quote.number||qid)}<br>
+      <b>Veículo/ref.:</b> ${esc([quote.vehicle?.brand,quote.vehicle?.model,quote.vehicle?.plate].filter(Boolean).join(" ")||"-")}</p>
+      <div class="progress"><span style="width:${pct}%"></span></div>
+      <p class="muted small">Você pode salvar parcial e voltar depois pelo mesmo link enquanto a cotação estiver aberta.</p>
+      <div class="quick">
+        <button class="light" onclick="applyAvailabilityAll('pronta entrega')">Prazo todos: pronta entrega</button>
+        <button class="light" onclick="applyAvailabilityAll('amanhã')">Prazo todos: amanhã</button>
+        <button class="light" onclick="applyAvailabilityAll('2 dias')">Prazo todos: 2 dias</button>
+      </div>
     </div>
-    <label>Descrição do vendedor</label><input id='desc_${it.id}' value='${esc(r.desc||it.desc||"")}'>
-    <label>Observação</label><textarea id='obs_${it.id}'>${esc(r.obs||"")}</textarea>
-    <button class='green' onclick="saveItem('${it.id}')">Salvar este item</button>
-    <span id='status_${it.id}' class='muted'></span>
-  </div>`}).join("")}
-  <div class='card'><button class='green' onclick='saveAll()'>Salvar tudo preenchido</button><p class='muted'>Você pode voltar depois pelo mesmo link enquanto a cotação estiver aberta.</p></div>`;
+    ${items.map((it,idx)=>renderItem(it,idx,resp[it.id]||{})).join("")}
+    <div class="stickyBottom">
+      <button class="green" onclick="saveAll()">Salvar tudo preenchido</button>
+      <button class="light" onclick="window.scrollTo({top:0,behavior:'smooth'})">Voltar ao topo</button>
+      <span class="muted small"> ${ASSINATURA}</span>
+    </div>`;
+}
+function renderItem(it,idx,r){
+  const answered = r && (r.price || r.available===false);
+  const unavailable = r && r.available===false;
+  return `<div class="item ${answered?'saved':''} ${unavailable?'unavailable':''}" id="card_${it.id}">
+    <div class="itemHead">
+      <div>
+        <h2><span class="itemNumber">${idx+1}</span> ${esc(it.desc)}</h2>
+        <div>
+          <span class="badge">OEM: ${esc(it.oem||"-")}</span>
+          ${it.altCode?`<span class="badge">Alt: ${esc(it.altCode)}</span>`:""}
+          <span class="badge">Qtd: ${esc(it.qty||1)}</span>
+          ${it.saleTotal?`<span class="badge">Referência: ${money(it.saleTotal)}</span>`:""}
+        </div>
+      </div>
+      <div>${answered?`<span class="ok">✔ salvo</span>`:`<span class="muted">pendente</span>`}</div>
+    </div>
+
+    <div class="quick" style="margin-top:10px">
+      <button class="green" onclick="markAvailable('${it.id}',true)">Tenho</button>
+      <button class="red" onclick="markAvailable('${it.id}',false)">Não tenho</button>
+      <button class="light" onclick="sameAsReference('${it.id}','${Number(it.saleUnit||it.lastKnownPrice||0)}')">Mesmo valor ref.</button>
+    </div>
+
+    <div class="grid">
+      <div><label>Tenho / consigo fornecer?</label><select id="av_${it.id}"><option value="true" ${r.available!==false?"selected":""}>Sim</option><option value="false" ${r.available===false?"selected":""}>Não</option></select></div>
+      <div><label>Marca</label><input id="brand_${it.id}" value="${esc(r.brand||it.brand||"")}" placeholder="Ex: COFAP"></div>
+      <div><label>Código da marca</label><input id="bc_${it.id}" value="${esc(r.brandCode||it.brandCode||"")}" placeholder="Opcional"></div>
+      <div><label>Preço unitário atual</label><input id="price_${it.id}" value="${esc(r.price||it.lastKnownPrice||"")}" placeholder="100,00"></div>
+      <div><label>Disponibilidade / prazo</label><input id="disp_${it.id}" value="${esc(r.availability||it.availability||"")}" placeholder="hoje / amanhã / 2 dias"></div>
+    </div>
+    <label>Descrição do vendedor</label><input id="desc_${it.id}" value="${esc(r.desc||it.desc||"")}" placeholder="Pode ajustar a descrição se necessário">
+    <label>Observação</label><textarea id="obs_${it.id}" placeholder="Condição, frete, pagamento, similar, original...">${esc(r.obs||"")}</textarea>
+    <button class="green" onclick="saveItem('${it.id}', true)">Salvar e ir para próxima</button>
+    <button class="light" onclick="saveItem('${it.id}', false)">Salvar este item</button>
+    <span id="status_${it.id}" class="muted small"></span>
+  </div>`;
+}
+function applyAvailabilityAll(v){
+  visibleItems().forEach(it=>setVal("disp_"+it.id,v));
+}
+function markAvailable(id,val){
+  setVal("av_"+id, val ? "true" : "false");
+  if(!val){
+    setVal("price_"+id,"");
+    setVal("disp_"+id,"indisponível");
+  }
+}
+function sameAsReference(id,val){
+  if(Number(val)>0) setVal("price_"+id,String(Number(val).toFixed(2)).replace(".",","));
 }
 function payload(id){
   return {available:$("av_"+id).value==="true",brand:$("brand_"+id).value.trim(),brandCode:$("bc_"+id).value.trim(),desc:$("desc_"+id).value.trim(),price:parseMoney($("price_"+id).value),availability:$("disp_"+id).value.trim(),obs:$("obs_"+id).value.trim(),updatedAt:Date.now(),signature:ASSINATURA};
 }
-function saveItem(id){
+function saveItem(id,goNext){
   const p=payload(id);
-  db.ref(`quotes/${qid}/responses/${sid}/${id}`).set(p).then(()=>{
-    $("status_"+id).textContent=" salvo";
+  return db.ref(`quotes/${qid}/responses/${sid}/${id}`).set(p).then(()=>{
+    const st=$("status_"+id); if(st) st.textContent=" salvo agora";
     const item=(quote.items||[]).find(x=>x.id===id);
     if(item && p.available && p.price>0){
       const priceId=item.sourcePriceId || (`auto_${sid}_${(item.oem||id).replace(/[^a-z0-9]/gi,"_")}`);
       db.ref("priceDb/"+priceId).update({supplierId:sid,oem:item.oem||"",desc:p.desc||item.desc,brand:p.brand,brandCode:p.brandCode,price:p.price,availability:p.availability,obs:p.obs,updatedAt:Date.now(),signature:ASSINATURA});
     }
+    if(goNext){
+      const items=visibleItems();
+      const idx=items.findIndex(i=>i.id===id);
+      const next=items[idx+1];
+      if(next && $("card_"+next.id)) $("card_"+next.id).scrollIntoView({behavior:"smooth",block:"start"});
+      else alert("Último item salvo. Obrigado!");
+    }
   });
 }
 function saveAll(){
-  const items=(quote.items||[]).filter(i=>quote.kind==="priceCheck"?i.targetSupplierId===sid:true);
-  Promise.all(items.map(i=>saveItem(i.id))).then(()=>alert("Cotação salva. Obrigado!"));
+  const items=visibleItems();
+  Promise.all(items.map(i=>saveItem(i.id,false))).then(()=>alert("Cotação salva. Obrigado!"));
 }
 window.addEventListener("load",init);
 </script>
