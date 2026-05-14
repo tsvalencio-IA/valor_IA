@@ -638,14 +638,24 @@ function supplierMatchesItem(s,item){
   return types.includes("todas as peças")||types.includes("todas as pecas")||types.includes("geral")||types.includes(item.type)||quoteKindPriceTarget(s,item);
 }
 function quoteKindPriceTarget(s,item){return item.targetSupplierId && item.targetSupplierId===s.id}
+function makeQuoteToken(qid,sid){
+  return btoa(qid+"|"+sid+"|valorIA").replaceAll("=","");
+}
 function quoteLink(qid,sid){
-  const token = btoa(qid+"|"+sid+"|valorIA").replaceAll("=","");
-  db.ref(`quotes/${qid}/links/${sid}`).update({token,supplierId:sid,createdAt:Date.now()});
+  // Função PURA: só monta o link. Não grava no Firebase.
+  // A versão anterior gravava no Firebase durante a renderização da tela,
+  // causando loop em tempo real e travamento da página.
+  const token = makeQuoteToken(qid,sid);
   return `${baseUrl()}fornecedor.html?q=${encodeURIComponent(qid)}&s=${encodeURIComponent(sid)}&t=${encodeURIComponent(token)}`;
 }
-function buildMessage(q,sid){
+function ensureQuoteLink(qid,sid){
+  const token = makeQuoteToken(qid,sid);
+  return db.ref(`quotes/${qid}/links/${sid}`).update({token,supplierId:sid,createdAt:Date.now()})
+    .then(()=>quoteLink(qid,sid));
+}
+async function buildMessage(q,sid){
   const s=suppliers[sid]||{}; const items=(q.items||[]).filter(i=>q.kind==="priceCheck"?i.targetSupplierId===sid:supplierMatchesItem({...s,id:sid},i));
-  const link=quoteLink(q.id,sid);
+  const link=await ensureQuoteLink(q.id,sid);
   const tpl=settings.messageTemplate||defaultMsg;
   return tpl.replaceAll("{fornecedor}",s.name||"Fornecedor")
     .replaceAll("{estabelecimento}",settings.name||"Estabelecimento")
@@ -656,18 +666,26 @@ function buildMessage(q,sid){
     .replaceAll("{link}",link)
     .replaceAll("{assinatura}",ASSINATURA);
 }
-function enqueueWhatsapp(qid,sid){
+async function enqueueWhatsapp(qid,sid){
   const q=quotes[qid]; const s=suppliers[sid]; if(!q||!s)return;
   if(q.status==="closed")return alert("Cotação encerrada. Reabra se precisar enviar.");
-  const msg=buildMessage(q,sid);
+  const msg=await buildMessage(q,sid);
   db.ref("whatsappQueue/"+uid("wa")).set({quoteId:qid,supplierId:sid,phone:phoneBR(s.phone),message:msg,status:"pending",createdAt:Date.now(),signature:ASSINATURA}).then(()=>alert("Convite entrou na fila do robô."));
 }
-function openWa(qid,sid){
+async function openWa(qid,sid){
   const s=suppliers[sid]; if(!s)return;
-  const msg=buildMessage(quotes[qid],sid);
+  const msg=await buildMessage(quotes[qid],sid);
   window.open(`https://wa.me/${phoneBR(s.phone)}?text=${encodeURIComponent(msg)}`,"_blank");
 }
-function copyMsg(qid,sid){navigator.clipboard.writeText(buildMessage(quotes[qid],sid));alert("Mensagem copiada.");}
+async function copyMsg(qid,sid){
+  const msg=await buildMessage(quotes[qid],sid);
+  await navigator.clipboard.writeText(msg);
+  alert("Mensagem copiada.");
+}
+async function openSupplierForm(qid,sid){
+  await ensureQuoteLink(qid,sid);
+  window.open(quoteLink(qid,sid),"_blank");
+}
 function renderQuotes(){
   const list=objVals(quotes).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   $("quotesList").innerHTML = !list.length ? "<p class='muted'>Nenhuma cotação.</p>" : list.map(q=>renderQuote(q)).join("");
@@ -687,7 +705,7 @@ function renderQuote(q){
       <button onclick="generateOrder('${q.id}')">Gerar ordem de compra</button>
       <button class='light' onclick="exportComparison('${q.id}')">Exportar comparativo XLSX</button>
     </div>
-    <details><summary>Enviar convite aos fornecedores</summary>${suppliersForQuote.map(s=>`<div class='quote'><b>${esc(s.name)}</b><br><button onclick="enqueueWhatsapp('${q.id}','${s.id}')">Enviar com robô</button><button class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar mensagem</button><button class='light' onclick="window.open('${quoteLink(q.id,s.id)}','_blank')">Abrir formulário</button></div>`).join("")||"<p class='muted'>Nenhum fornecedor compatível.</p>"}</details>
+    <details><summary>Enviar convite aos fornecedores</summary>${suppliersForQuote.map(s=>`<div class='quote'><b>${esc(s.name)}</b><br><button onclick="enqueueWhatsapp('${q.id}','${s.id}')">Enviar com robô</button><button class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar mensagem</button><button class='light' onclick="openSupplierForm('${q.id}','${s.id}')">Abrir formulário</button></div>`).join("")||"<p class='muted'>Nenhum fornecedor compatível.</p>"}</details>
     <details><summary>Melhores opções e lucro</summary><div class='tablewrap'><table><thead><tr><th>Peça</th><th>Venda base</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro</th></tr></thead><tbody>${winners.map(w=>`<tr><td><b>${esc(w.item.desc)}</b><br><span class='muted'>${esc(w.item.oem)} | Qtd ${w.item.qty}</span></td><td>${money(w.saleTotal)}</td><td>${w.winner?money(w.buyTotal):"<span class='bad'>sem resposta</span>"}</td><td>${w.winner?`${esc(w.winner.supplierName)}<br>${esc(w.winner.brand||"-")} ${esc(w.winner.brandCode||"")}`:"-"}</td><td class='${w.profit>=0?"ok":"bad"}'>${w.winner?money(w.profit):"-"}</td></tr>`).join("")}</tbody></table></div></details>
   </div>`;
 }

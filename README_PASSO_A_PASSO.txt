@@ -1,4 +1,4 @@
-VALORIA V13 - BANCO DE PREÇOS + COTAÇÃO + ROBÔ + ENCERRAR COTAÇÃO
+VALORIA V13.1 - BANCO DE PREÇOS + COTAÇÃO + ROBÔ + ENCERRAR COTAÇÃO
 
 ARQUIVOS PARA SUBIR NO GITHUB PAGES
 Suba estes arquivos na raiz do repositório valor_IA:
@@ -50,3 +50,12 @@ NOVIDADES DA V13
 - Cabeçalho redesenhado com visual comercial.
 - Cadastro do estabelecimento ganhou nicho e ícone editável.
 - Nichos prontos: autopeças/oficina, construção, farmácia, agro/pet, informática, mercado, papelaria, restaurante, hotelaria, estética, marcenaria, ferragens, elétrica, hidráulica, limpeza, EPI, eventos, clínicas e transportes.
+
+
+CORREÇÃO V13.1
+- Corrigido travamento da página causado por escrita no Firebase durante a renderização dos botões de fornecedor.
+- Links de fornecedor agora são gravados somente quando você clica em Abrir WhatsApp, Copiar mensagem, Enviar com robô ou Abrir formulário.
+- Mantida a importação inteligente da V13.
+
+ABRIR COM CACHE LIMPO:
+https://tsvalencio-ia.github.io/valor_IA/index.html?v=13.1
