@@ -111,6 +111,7 @@
       <div class="grid">
         <div><label>Nome do estabelecimento</label><input id="set_name" placeholder="Ex: Auto Peças Modelo"></div>
         <div><label>WhatsApp da loja</label><input id="set_phone" placeholder="5517999999999"></div>
+        <div><label>WhatsApp do gestor para avisos</label><input id="set_managerPhone" placeholder="5517999999999"></div>
         <div><label>Cidade/UF</label><input id="set_city" placeholder="São José do Rio Preto/SP"></div>
         <div><label>Responsável</label><input id="set_owner" placeholder="Nome do responsável"></div>
         <div><label>Nicho do cliente</label><select id="set_niche"></select></div>
@@ -281,6 +282,9 @@ const ASSINATURA = "Powered by thIAguinho Soluções Digitais";
 let db, settings={}, suppliers={}, priceDb={}, quotes={}, orders={}, queue={}, robotStatus={};
 let importItems=[], importVehicle={}, importPattern="", editingQuoteId=null;
 let selectedPrices = new Set();
+let selectedQuoteSuppliers = {};
+let openPanels = {};
+let whatsappQueue = {};
 
 const NICHOS = [
   {id:"autopecas", icon:"🔧", label:"Autopeças / Oficina / Frota", hint:"Cotação de peças automotivas, OS, compra e lucro."},
@@ -369,6 +373,7 @@ function hydrateSettings(){
     $("set_name").value=settings.name||"";
     $("set_phone").value=settings.phone||"";
     $("set_city").value=settings.city||"";
+    if($("set_managerPhone")) $("set_managerPhone").value=settings.managerPhone||"";
     $("set_owner").value=settings.owner||"";
     $("set_niche").value=settings.niche||"autopecas";
     $("set_icon").value=settings.customIcon||"";
@@ -819,19 +824,18 @@ function quoteKindPriceTarget(s,item){return item.targetSupplierId && item.targe
 function makeQuoteToken(qid,sid){
   return btoa(qid+"|"+sid+"|valorIA").replaceAll("=","");
 }
+function quoteToken(qid,sid){
+  return btoa(qid+"|"+sid+"|valorIA").replaceAll("=","");
+}
 function quoteLink(qid,sid){
-  // Função PURA: só monta o link. Não grava no Firebase.
-  // A versão anterior gravava no Firebase durante a renderização da tela,
-  // causando loop em tempo real e travamento da página.
-  const token = makeQuoteToken(qid,sid);
+  const token = quoteToken(qid,sid);
   return `${baseUrl()}fornecedor.html?q=${encodeURIComponent(qid)}&s=${encodeURIComponent(sid)}&t=${encodeURIComponent(token)}`;
 }
-function ensureQuoteLink(qid,sid){
-  const token = makeQuoteToken(qid,sid);
-  return db.ref(`quotes/${qid}/links/${sid}`).update({token,supplierId:sid,createdAt:Date.now()})
-    .then(()=>quoteLink(qid,sid));
+function ensureQuoteLinkSaved(qid,sid){
+  const token = quoteToken(qid,sid);
+  return db.ref(`quotes/${qid}/links/${sid}`).update({token,supplierId:sid,createdAt:Date.now()});
 }
-async function buildMessage(q,sid){
+function buildMessage(q,sid){
   const s=suppliers[sid]||{}; const items=(q.items||[]).filter(i=>q.kind==="priceCheck"?i.targetSupplierId===sid:supplierMatchesItem({...s,id:sid},i));
   const link=await ensureQuoteLink(q.id,sid);
   const tpl=settings.messageTemplate||defaultMsg;
@@ -853,7 +857,7 @@ async function enqueueWhatsapp(qid,sid){
 async function openWa(qid,sid){
   const s=suppliers[sid]; if(!s)return;
   const msg=await buildMessage(quotes[qid],sid);
-  window.open(`https://wa.me/${phoneBR(s.phone)}?text=${encodeURIComponent(msg)}`,"_blank");
+  ensureQuoteLinkSaved(qid,sid); window.open(`https://wa.me/${phoneBR(s.phone)}?text=${encodeURIComponent(msg)}`,"_blank");
 }
 async function copyMsg(qid,sid){
   const msg=await buildMessage(quotes[qid],sid);
@@ -869,38 +873,113 @@ function renderQuotes(){
   $("quotesList").innerHTML = !list.length ? "<p class='muted'>Nenhuma cotação.</p>" : list.map(q=>renderQuote(q)).join("");
   $("latestQuotes").innerHTML = list.slice(0,5).map(q=>`<div class='quote ${q.status==="closed"?"closed":""}'><b>${esc(q.number)}</b> — ${q.status==="closed"?"Encerrada":"Aberta"} — ${q.items?.length||0} itens</div>`).join("")||"<p class='muted'>Sem cotações.</p>";
 }
+
+function togglePanel(qid, name){
+  if(!openPanels[qid]) openPanels[qid]={};
+  openPanels[qid][name]=!openPanels[qid][name];
+  renderQuotes();
+}
+function isPanelOpen(qid,name){
+  return !!(openPanels[qid] && openPanels[qid][name]);
+}
+function ensureSet(qid){
+  if(!selectedQuoteSuppliers[qid]) selectedQuoteSuppliers[qid]=new Set();
+  if(Array.isArray(selectedQuoteSuppliers[qid])) selectedQuoteSuppliers[qid]=new Set(selectedQuoteSuppliers[qid]);
+  return selectedQuoteSuppliers[qid];
+}
+function getSuppliersForQuote(q){
+  return objVals(suppliers).filter(s=>(q.items||[]).some(i=>q.kind==="priceCheck"?i.targetSupplierId===s.id:supplierMatchesItem(s,i)));
+}
+function toggleQuoteSupplier(qid,sid,checked){
+  const set=ensureSet(qid);
+  if(checked) set.add(sid); else set.delete(sid);
+  const counter=document.getElementById("selcount_"+qid);
+  if(counter) counter.textContent=set.size;
+}
+function selectAllQuoteSuppliers(qid){
+  const q=quotes[qid]; if(!q)return;
+  selectedQuoteSuppliers[qid]=new Set(getSuppliersForQuote(q).map(s=>s.id));
+  openPanels[qid]=openPanels[qid]||{}; openPanels[qid].send=true;
+  renderQuotes();
+}
+function clearQuoteSuppliers(qid){
+  selectedQuoteSuppliers[qid]=new Set();
+  openPanels[qid]=openPanels[qid]||{}; openPanels[qid].send=true;
+  renderQuotes();
+}
+function enqueueSelectedWhatsapp(qid){
+  const q=quotes[qid]; if(!q)return;
+  if(q.status==="closed") return alert("Cotação encerrada. Reabra se quiser enviar.");
+  const ids=[...ensureSet(qid)];
+  if(!ids.length) return alert("Selecione pelo menos um fornecedor.");
+  const updates={};
+  ids.forEach(sid=>{
+    const s=suppliers[sid];
+    if(!s) return;
+    const key=uid("wa");
+    updates[`quotes/${qid}/links/${sid}`]={token:quoteToken(qid,sid),supplierId:sid,createdAt:Date.now()};
+    updates[`whatsappQueue/${key}`]={
+      quoteId:qid, quoteNumber:q.number||qid, supplierId:sid, supplierName:s.name||"Fornecedor",
+      phone:phoneBR(s.phone), message:buildMessage(q,sid), status:"pending",
+      createdAt:Date.now(), signature:ASSINATURA
+    };
+  });
+  openPanels[qid]=openPanels[qid]||{}; openPanels[qid].send=true;
+  db.ref().update(updates).then(()=>alert(`${ids.length} mensagem(ns) adicionada(s) na fila do robô.`));
+}
+function renderRawWhatsAppReplies(q){
+  const raw = q.whatsappRawReplies || {};
+  const list = Object.entries(raw).sort((a,b)=>(b[1].receivedAt||0)-(a[1].receivedAt||0));
+  if(!list.length) return "<p class='muted'>Nenhuma resposta direta no WhatsApp registrada ainda.</p>";
+  return list.map(([id,r])=>`<div class="rawReply"><b>${esc(r.supplierName||supplierName(r.supplierId)||"Fornecedor")}</b> — ${new Date(r.receivedAt||Date.now()).toLocaleString("pt-BR")}<br><span class="muted">Status: ${esc(r.parseStatus||"registrado")} | Itens interpretados: ${r.parsedCount||0}</span><br><br>${esc(r.text||"")}</div>`).join("");
+}
 function renderQuote(q){
-  const suppliersForQuote = objVals(suppliers).filter(s=>(q.items||[]).some(i=>q.kind==="priceCheck"?i.targetSupplierId===s.id:supplierMatchesItem(s,i)));
+  const suppliersForQuote = getSuppliersForQuote(q);
   const winners=calcWinners(q); const lucro=winners.reduce((s,w)=>s+(w.profit||0),0);
   const answered=winners.filter(w=>w.winner).length; const pct=(q.items?.length?Math.round(answered/(q.items.length)*100):0);
+  const selected=ensureSet(q.id);
+  const queueList=objVals(whatsappQueue||{}).filter(x=>x.quoteId===q.id);
+  const pendingQueue=queueList.filter(x=>["pending","sending"].includes(x.status)).length;
+  const sentQueue=queueList.filter(x=>x.status==="sent").length;
+
   return `<div class='quote ${q.status==="closed"?"closed":""}'>
     <div class='row'><h3>${esc(q.number)} ${q.status==="closed"?"<span class='pill'>encerrada</span>":"<span class='pill'>aberta</span>"}</h3></div>
     <p class='muted'>${esc(q.vehicle?.brand||"")} ${esc(q.vehicle?.model||"")} ${esc(q.vehicle?.year||"")} — Placa ${esc(q.vehicle?.plate||"-")} — ${q.items?.length||0} item(ns) — respondidos ${answered}/${q.items?.length||0}</p>
-    <div class='tablewrap'>
-      <table>
-        <tbody>
-          <tr><th>Cliente/ref.</th><td>${esc(q.vehicle?.customer||"-")}</td><th>Marca</th><td>${esc(q.vehicle?.brand||"-")}</td></tr>
-          <tr><th>Modelo</th><td>${esc(q.vehicle?.model||"-")}</td><th>Ano</th><td>${esc(q.vehicle?.year||"-")}</td></tr>
-          <tr><th>Placa</th><td>${esc(q.vehicle?.plate||"-")}</td><th>Chassi</th><td>${esc(q.vehicle?.chassi||"-")}</td></tr>
-          <tr><th>KM</th><td>${esc(q.vehicle?.km||"-")}</td><th>Prefixo/frota</th><td>${esc(q.vehicle?.prefix||"-")}</td></tr>
-          <tr><th>Observação</th><td colspan="3">${esc(q.vehicle?.obs||"-")}</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <div class='tablewrap'><table><tbody>
+      <tr><th>Cliente/ref.</th><td>${esc(q.vehicle?.customer||"-")}</td><th>Marca</th><td>${esc(q.vehicle?.brand||"-")}</td></tr>
+      <tr><th>Modelo</th><td>${esc(q.vehicle?.model||"-")}</td><th>Ano</th><td>${esc(q.vehicle?.year||"-")}</td></tr>
+      <tr><th>Placa</th><td>${esc(q.vehicle?.plate||"-")}</td><th>Chassi</th><td>${esc(q.vehicle?.chassi||"-")}</td></tr>
+      <tr><th>KM</th><td>${esc(q.vehicle?.km||"-")}</td><th>Prefixo/frota</th><td>${esc(q.vehicle?.prefix||"-")}</td></tr>
+      <tr><th>Observação</th><td colspan="3">${esc(q.vehicle?.obs||"-")}</td></tr>
+    </tbody></table></div>
     <div class='bar'><span style='width:${pct}%'></span></div>
-    <p><b>Lucro estimado com melhores preços:</b> <span class='ok'>${money(lucro)}</span></p>
+    <p><b>Lucro estimado:</b> <span class='ok'>${money(lucro)}</span> <span class='pill'>Fila: ${pendingQueue}</span> <span class='pill'>Enviadas: ${sentQueue}</span></p>
     <div class='row'>
       ${q.status==="closed"?`<button class='green' onclick="reopenQuote('${q.id}')">Reabrir cotação</button>`:`<button class='red' onclick="closeQuote('${q.id}')">Encerrar cotação</button>`}
       <button onclick="generateOrder('${q.id}')">Gerar ordem de compra</button>
       <button class='light' onclick="editQuote('${q.id}')">Editar orçamento</button>
-      <button class='light' onclick="exportComparison('${q.id}')">Exportar comparativo XLSX</button>
+      <button class='light' onclick="exportComparison('${q.id}')">Exportar XLSX</button>
       <button class='red' onclick="deleteQuote('${q.id}')">Excluir</button>
     </div>
-    <details><summary>Enviar convite aos fornecedores</summary>${suppliersForQuote.map(s=>`<div class='quote'><b>${esc(s.name)}</b><br><button onclick="enqueueWhatsapp('${q.id}','${s.id}')">Enviar com robô</button><button class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar mensagem</button><button class='light' onclick="openSupplierForm('${q.id}','${s.id}')">Abrir formulário</button></div>`).join("")||"<p class='muted'>Nenhum fornecedor compatível.</p>"}</details>
-    <details><summary>Melhores opções e lucro</summary><div class='tablewrap'><table><thead><tr><th>Peça</th><th>Venda base</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro</th></tr></thead><tbody>${winners.map(w=>`<tr><td><b>${esc(w.item.desc)}</b><br><span class='muted'>${esc(w.item.oem)} | Qtd ${w.item.qty}</span></td><td>${money(w.saleTotal)}</td><td>${w.winner?money(w.buyTotal):"<span class='bad'>sem resposta</span>"}</td><td>${w.winner?`${esc(w.winner.supplierName)}<br>${esc(w.winner.brand||"-")} ${esc(w.winner.brandCode||"")}`:"-"}</td><td class='${w.profit>=0?"ok":"bad"}'>${w.winner?money(w.profit):"-"}</td></tr>`).join("")}</tbody></table></div></details>
-    <details><summary>Peças salvas neste orçamento</summary>
-      <div class='tablewrap'><table><thead><tr><th>#</th><th>Cód.</th><th>Cód. alt.</th><th>Descrição</th><th>Qtd</th><th>Venda/base</th><th>Tipo</th><th>Origem</th></tr></thead><tbody>${(q.items||[]).map(i=>`<tr><td>${i.seq||""}</td><td>${esc(i.oem||"-")}</td><td>${esc(i.altCode||"-")}</td><td>${esc(i.desc||"-")}</td><td>${i.qty||1}</td><td>${money(i.saleTotal||0)}</td><td>${esc(i.type||"geral")}</td><td>${esc(i.importPattern||q.importPattern||q.source||"-")}</td></tr>`).join("")}</tbody></table></div>
-    </details>
+    <div class='card' style='box-shadow:none;margin-top:12px'>
+      <button class='light' onclick="togglePanel('${q.id}','send')">${isPanelOpen(q.id,'send')?'Ocultar':'Enviar convites'}</button>
+      <button class='light' onclick="togglePanel('${q.id}','results')">${isPanelOpen(q.id,'results')?'Ocultar':'Ver resultados'}</button>
+      <button class='light' onclick="togglePanel('${q.id}','items')">${isPanelOpen(q.id,'items')?'Ocultar':'Ver peças'}</button>
+      <button class='light' onclick="togglePanel('${q.id}','whatsapp')">${isPanelOpen(q.id,'whatsapp')?'Ocultar':'Respostas WhatsApp'}</button>
+    </div>
+
+    ${isPanelOpen(q.id,'send') ? `<div class='card' style='box-shadow:none'>
+      <h3>Enviar convite para fornecedores</h3>
+      <p class='muted'>Selecionados: <b id="selcount_${q.id}">${selected.size}</b>. Marque os fornecedores e envie todos de uma vez pelo robô.</p>
+      <div class='row'><button class='light' onclick="selectAllQuoteSuppliers('${q.id}')">Selecionar todos</button><button class='light' onclick="clearQuoteSuppliers('${q.id}')">Limpar seleção</button><button onclick="enqueueSelectedWhatsapp('${q.id}')">Enviar selecionados com robô</button></div>
+      <div class="supplierCheckGrid">${suppliersForQuote.map(s=>`<div class="supplierCheck"><label style="display:block;cursor:pointer"><input type="checkbox" ${selected.has(s.id)?"checked":""} onchange="toggleQuoteSupplier('${q.id}','${s.id}',this.checked)"> <b>${esc(s.name)}</b></label><span class='muted'>${esc(s.phone||"")}<br>${(s.types||[]).join(", ")}</span><div class='row'><button type="button" class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button type="button" class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar</button><button type="button" class='light' onclick="ensureQuoteLinkSaved('${q.id}','${s.id}');window.open('${quoteLink(q.id,s.id)}','_blank')">Formulário</button></div></div>`).join("") || "<p class='muted'>Nenhum fornecedor compatível.</p>"}</div>
+    </div>` : ""}
+
+    ${isPanelOpen(q.id,'results') ? `<div class='card' style='box-shadow:none'><h3>Melhores opções e lucro</h3><div class='tablewrap'><table><thead><tr><th>Peça</th><th>Venda base</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro</th></tr></thead><tbody>${winners.map(w=>`<tr><td><b>${esc(w.item.desc)}</b><br><span class='muted'>${esc(w.item.oem)} | Qtd ${w.item.qty}</span></td><td>${money(w.saleTotal)}</td><td>${w.winner?money(w.buyTotal):"<span class='bad'>sem resposta</span>"}</td><td>${w.winner?`${esc(w.winner.supplierName)}<br>${esc(w.winner.brand||"-")} ${esc(w.winner.brandCode||"")}`:"-"}</td><td class='${w.profit>=0?"ok":"bad"}'>${w.winner?money(w.profit):"-"}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
+
+    ${isPanelOpen(q.id,'items') ? `<div class='card' style='box-shadow:none'><h3>Peças salvas neste orçamento</h3><div class='tablewrap'><table><thead><tr><th>#</th><th>Cód.</th><th>Cód. alt.</th><th>Descrição</th><th>Qtd</th><th>Venda/base</th><th>Tipo</th><th>Origem</th></tr></thead><tbody>${(q.items||[]).map(i=>`<tr><td>${i.seq||""}</td><td>${esc(i.oem||"-")}</td><td>${esc(i.altCode||"-")}</td><td>${esc(i.desc||"-")}</td><td>${i.qty||1}</td><td>${money(i.saleTotal||0)}</td><td>${esc(i.type||"geral")}</td><td>${esc(i.importPattern||q.importPattern||q.source||"-")}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
+
+    ${isPanelOpen(q.id,'whatsapp') ? `<div class='card' style='box-shadow:none'><h3>Respostas diretas recebidas no WhatsApp</h3>${renderRawWhatsAppReplies(q)}</div>` : ""}
   </div>`;
 }
 function closeQuote(id){if(confirm("Encerrar cotação? Ela não ficará mais visível para vendedores."))db.ref("quotes/"+id).update({status:"closed",closedAt:Date.now()});}

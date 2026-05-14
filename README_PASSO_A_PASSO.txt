@@ -102,3 +102,14 @@ NOVIDADES DA V13.4
 IMPORTANTE SOBRE RESPOSTAS NO WHATSAPP
 O formulário por link continua sendo o método mais seguro e organizado.
 A leitura de texto livre no WhatsApp é apoio, porque vendedor pode responder de qualquer jeito.
+
+NOVIDADES DA V13.5
+- Corrigido problema das áreas que fechavam sozinhas.
+- Seleção de fornecedores estável.
+- Envio para vários fornecedores de uma vez corrigido.
+- Campo novo: WhatsApp do gestor para avisos.
+- Robô avisa o gestor pelo WhatsApp quando chega resposta de cotação.
+- Resposta bruta do fornecedor fica salva na cotação.
+- Link do fornecedor não grava mais no Firebase durante renderização, evitando loop/travamento.
+
+Atualize também a pasta robo-whatsapp nesta versão.
