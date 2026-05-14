@@ -837,7 +837,7 @@ function ensureQuoteLinkSaved(qid,sid){
 }
 function buildMessage(q,sid){
   const s=suppliers[sid]||{}; const items=(q.items||[]).filter(i=>q.kind==="priceCheck"?i.targetSupplierId===sid:supplierMatchesItem({...s,id:sid},i));
-  const link=await ensureQuoteLink(q.id,sid);
+  const link=quoteLink(q.id,sid);
   const tpl=settings.messageTemplate||defaultMsg;
   return tpl.replaceAll("{fornecedor}",s.name||"Fornecedor")
     .replaceAll("{estabelecimento}",settings.name||"Estabelecimento")
@@ -857,15 +857,16 @@ async function enqueueWhatsapp(qid,sid){
 async function openWa(qid,sid){
   const s=suppliers[sid]; if(!s)return;
   const msg=await buildMessage(quotes[qid],sid);
-  ensureQuoteLinkSaved(qid,sid); window.open(`https://wa.me/${phoneBR(s.phone)}?text=${encodeURIComponent(msg)}`,"_blank");
+  await ensureQuoteLinkSaved(qid,sid); window.open(`https://wa.me/${phoneBR(s.phone)}?text=${encodeURIComponent(msg)}`,"_blank");
 }
 async function copyMsg(qid,sid){
+  await ensureQuoteLinkSaved(qid,sid);
   const msg=await buildMessage(quotes[qid],sid);
   await navigator.clipboard.writeText(msg);
   alert("Mensagem copiada.");
 }
 async function openSupplierForm(qid,sid){
-  await ensureQuoteLink(qid,sid);
+  await ensureQuoteLinkSaved(qid,sid);
   window.open(quoteLink(qid,sid),"_blank");
 }
 function renderQuotes(){
@@ -972,7 +973,7 @@ function renderQuote(q){
       <h3>Enviar convite para fornecedores</h3>
       <p class='muted'>Selecionados: <b id="selcount_${q.id}">${selected.size}</b>. Marque os fornecedores e envie todos de uma vez pelo robô.</p>
       <div class='row'><button class='light' onclick="selectAllQuoteSuppliers('${q.id}')">Selecionar todos</button><button class='light' onclick="clearQuoteSuppliers('${q.id}')">Limpar seleção</button><button onclick="enqueueSelectedWhatsapp('${q.id}')">Enviar selecionados com robô</button></div>
-      <div class="supplierCheckGrid">${suppliersForQuote.map(s=>`<div class="supplierCheck"><label style="display:block;cursor:pointer"><input type="checkbox" ${selected.has(s.id)?"checked":""} onchange="toggleQuoteSupplier('${q.id}','${s.id}',this.checked)"> <b>${esc(s.name)}</b></label><span class='muted'>${esc(s.phone||"")}<br>${(s.types||[]).join(", ")}</span><div class='row'><button type="button" class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button type="button" class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar</button><button type="button" class='light' onclick="ensureQuoteLinkSaved('${q.id}','${s.id}');window.open('${quoteLink(q.id,s.id)}','_blank')">Formulário</button></div></div>`).join("") || "<p class='muted'>Nenhum fornecedor compatível.</p>"}</div>
+      <div class="supplierCheckGrid">${suppliersForQuote.map(s=>`<div class="supplierCheck"><label style="display:block;cursor:pointer"><input type="checkbox" ${selected.has(s.id)?"checked":""} onchange="toggleQuoteSupplier('${q.id}','${s.id}',this.checked)"> <b>${esc(s.name)}</b></label><span class='muted'>${esc(s.phone||"")}<br>${(s.types||[]).join(", ")}</span><div class='row'><button type="button" class='light' onclick="openWa('${q.id}','${s.id}')">Abrir WhatsApp</button><button type="button" class='light' onclick="copyMsg('${q.id}','${s.id}')">Copiar</button><button type="button" class='light' onclick="openSupplierForm('${q.id}','${s.id}')">Formulário</button></div></div>`).join("") || "<p class='muted'>Nenhum fornecedor compatível.</p>"}</div>
     </div>` : ""}
 
     ${isPanelOpen(q.id,'results') ? `<div class='card' style='box-shadow:none'><h3>Melhores opções e lucro</h3><div class='tablewrap'><table><thead><tr><th>Peça</th><th>Venda base</th><th>Melhor compra</th><th>Fornecedor</th><th>Lucro</th></tr></thead><tbody>${winners.map(w=>`<tr><td><b>${esc(w.item.desc)}</b><br><span class='muted'>${esc(w.item.oem)} | Qtd ${w.item.qty}</span></td><td>${money(w.saleTotal)}</td><td>${w.winner?money(w.buyTotal):"<span class='bad'>sem resposta</span>"}</td><td>${w.winner?`${esc(w.winner.supplierName)}<br>${esc(w.winner.brand||"-")} ${esc(w.winner.brandCode||"")}`:"-"}</td><td class='${w.profit>=0?"ok":"bad"}'>${w.winner?money(w.profit):"-"}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
