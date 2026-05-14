@@ -113,3 +113,10 @@ NOVIDADES DA V13.5
 - Link do fornecedor não grava mais no Firebase durante renderização, evitando loop/travamento.
 
 Atualize também a pasta robo-whatsapp nesta versão.
+
+
+V13.6 CORREÇÃO CRÍTICA
+- Corrigido erro de JavaScript que travava todos os botões.
+- A tela agora volta a responder cliques.
+- Corrigido buildMessage/quoteLink para não usar await fora de função async.
+- Corrigido abertura de formulário, copiar mensagem e abrir WhatsApp.
